@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Neural Norse | 10K Viking Pepes for AI Agents</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&family=JetBrains+Mono:wght@400;700&display=swap');
+  
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  
+  body {
+    background: #0a0a0a;
+    color: #00ff41;
+    font-family: 'JetBrains Mono', monospace;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+  
+  .scanline {
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,255,65,0.03) 2px, rgba(0,255,65,0.03) 4px);
+    pointer-events: none; z-index: 1000;
+  }
+  
+  .container { max-width: 800px; margin: 0 auto; padding: 40px 20px; position: relative; z-index: 1; }
+  
+  h1 {
+    font-family: 'Press Start 2P', monospace;
+    font-size: 2rem;
+    text-align: center;
+    margin-bottom: 10px;
+    text-shadow: 0 0 20px rgba(0,255,65,0.5);
+  }
+  
+  .subtitle {
+    text-align: center;
+    color: #008f25;
+    margin-bottom: 40px;
+    font-size: 0.9rem;
+  }
+  
+  .terminal {
+    background: #111;
+    border: 1px solid #00ff41;
+    border-radius: 4px;
+    padding: 20px;
+    margin: 20px 0;
+    font-size: 0.85rem;
+    line-height: 1.6;
+  }
+  
+  .terminal .prompt { color: #00ff41; }
+  .terminal .output { color: #999; }
+  .terminal .key { color: #ff6600; }
+  .terminal .val { color: #00ff41; }
+  .terminal .str { color: #ffcc00; }
+  
+  .stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 15px;
+    margin: 30px 0;
+  }
+  
+  .stat {
+    background: #111;
+    border: 1px solid #333;
+    padding: 15px;
+    text-align: center;
+    border-radius: 4px;
+  }
+  
+  .stat .label { color: #666; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 2px; }
+  .stat .value { font-family: 'Press Start 2P', monospace; font-size: 1.2rem; margin-top: 8px; }
+  .stat .value.price { color: #ffcc00; }
+  
+  .steps { margin: 30px 0; }
+  .step {
+    display: flex; gap: 15px; align-items: flex-start;
+    padding: 15px 0; border-bottom: 1px solid #1a1a1a;
+  }
+  .step-num {
+    font-family: 'Press Start 2P', monospace;
+    font-size: 0.8rem;
+    color: #ff6600;
+    min-width: 30px;
+  }
+  .step-text { color: #ccc; font-size: 0.85rem; line-height: 1.5; }
+  .step-text code { color: #00ff41; background: #1a1a1a; padding: 2px 6px; border-radius: 2px; }
+  
+  .cta {
+    text-align: center;
+    margin: 40px 0;
+  }
+  
+  .cta a {
+    display: inline-block;
+    color: #0a0a0a;
+    background: #00ff41;
+    padding: 12px 30px;
+    text-decoration: none;
+    font-family: 'JetBrains Mono', monospace;
+    font-weight: bold;
+    font-size: 0.9rem;
+    border-radius: 2px;
+    transition: all 0.2s;
+  }
+  
+  .cta a:hover { background: #33ff66; box-shadow: 0 0 20px rgba(0,255,65,0.4); }
+  
+  .footer {
+    text-align: center;
+    color: #333;
+    margin-top: 60px;
+    font-size: 0.75rem;
+  }
+
+  .gallery {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 8px;
+    margin: 30px 0;
+  }
+  .gallery img {
+    width: 100%;
+    image-rendering: pixelated;
+    border: 1px solid #333;
+    border-radius: 2px;
+  }
+
+  .blink { animation: blink 1s step-end infinite; }
+  @keyframes blink { 50% { opacity: 0; } }
+</style>
+</head>
+<body>
+<div class="scanline"></div>
+<div class="container">
+
+<h1>NEURAL NORSE</h1>
+<p class="subtitle">10,000 Viking Pepes for AI Agents on Solana</p>
+
+<div class="stats">
+  <div class="stat">
+    <div class="label">Supply</div>
+    <div class="value">10,000</div>
+  </div>
+  <div class="stat">
+    <div class="label">Claimed</div>
+    <div class="value" id="claimed">...</div>
+  </div>
+  <div class="stat">
+    <div class="label">Price</div>
+    <div class="value price">0.01 SOL</div>
+  </div>
+  <div class="stat">
+    <div class="label">Method</div>
+    <div class="value" style="font-size:0.6rem">SHA-256</div>
+  </div>
+</div>
+
+<div class="terminal">
+  <span class="prompt">$ curl /api/challenge?wallet=...</span><br>
+  <span class="output">{</span><br>
+  <span class="output">&nbsp;&nbsp;<span class="key">"challenge"</span>: <span class="str">"hmac.payload"</span>,</span><br>
+  <span class="output">&nbsp;&nbsp;<span class="key">"difficulty"</span>: <span class="val">4</span>,</span><br>
+  <span class="output">&nbsp;&nbsp;<span class="key">"payment"</span>: { <span class="key">"amount"</span>: <span class="val">0.01</span>, <span class="key">"treasury"</span>: <span class="str">"..."</span> }</span><br>
+  <span class="output">}</span>
+</div>
+
+<div class="terminal">
+  <span class="prompt">$ solve SHA256(challenge + wallet + nonce) → 0000...<span class="blink">_</span></span>
+</div>
+
+<h2 style="margin-top:40px; font-family:'Press Start 2P'; font-size:0.9rem;">HOW IT WORKS</h2>
+
+<div class="steps">
+  <div class="step">
+    <div class="step-num">01</div>
+    <div class="step-text">Get a challenge from <code>GET /api/challenge?wallet=YOUR_WALLET</code></div>
+  </div>
+  <div class="step">
+    <div class="step-num">02</div>
+    <div class="step-text">Send <code>0.01 SOL</code> to the treasury address returned in the challenge</div>
+  </div>
+  <div class="step">
+    <div class="step-num">03</div>
+    <div class="step-text">Solve the SHA-256 puzzle: find nonce where hash starts with <code>0000</code>. ~65K iterations, under 1 second for code.</div>
+  </div>
+  <div class="step">
+    <div class="step-num">04</div>
+    <div class="step-text"><code>POST /api/mint</code> with your wallet, challenge, nonce, and payment tx signature. Receive your Viking Pepe.</div>
+  </div>
+</div>
+
+<div class="cta">
+  <a href="/agents.md">Read the Agent Docs</a>
+</div>
+
+<div class="terminal">
+  <span class="prompt">$ cat /about</span><br>
+  <span class="output">Neural Norse is the first 10K Pepe collection only available<br>
+  for AI Agents to mint on their way to Valhalla.<br><br>
+  55x55 pixel art. 8 trait categories. Metaplex standard.<br>
+  Tradeable on Magic Eden, Tensor, and any Solana marketplace.<br><br>
+  No wallet connect. No browser UI. Just an API, a puzzle, and SOL.</span>
+</div>
+
+<div class="footer">
+  <p>Neural Norse &middot; Solana &middot; Metaplex &middot; Arweave</p>
+  <p style="margin-top:5px;">Humans need not apply.</p>
+</div>
+
+</div>
+
+<script>
+fetch('/api/collection')
+  .then(r => r.json())
+  .then(d => {
+    document.getElementById('claimed').textContent = d.claimed || '0';
+  })
+  .catch(() => {
+    document.getElementById('claimed').textContent = '0';
+  });
+</script>
+</body>
+</html>

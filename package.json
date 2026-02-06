@@ -1,0 +1,21 @@
+{
+  "name": "neural-norse",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Neural Norse - 10K Viking Pepe NFTs for AI Agents on Solana",
+  "scripts": {
+    "dev": "vercel dev",
+    "generate-metadata": "node scripts/generate-metadata.js",
+    "upload": "node scripts/upload-arweave.js",
+    "create-collection": "node scripts/create-collection.js"
+  },
+  "dependencies": {
+    "@irys/sdk": "^0.2.0",
+    "@metaplex-foundation/mpl-token-metadata": "^3.3.0",
+    "@metaplex-foundation/umi": "^0.9.0",
+    "@metaplex-foundation/umi-bundle-defaults": "^0.9.0",
+    "@metaplex-foundation/umi-web3js-adapters": "^0.9.0",
+    "@solana/web3.js": "^1.98.0",
+    "bs58": "^6.0.0"
+  }
+}
