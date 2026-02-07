@@ -5,7 +5,7 @@
 ## Quick Start
 
 ```
-Price: 0.02 SOL + ~0.01 SOL account rent
+Price: 0.02 SOL + ~0.0035 SOL account rent
 Supply: 9,750 public (250 reserved)
 Max per wallet: 10
 Method: SHA-256 proof-of-work + Core Candy Machine mint
@@ -123,9 +123,9 @@ result = client.send_raw_transaction(bytes(vtx))
 
 **Your wallet pays all costs:**
 - 0.02 SOL mint price (goes to treasury)
-- ~0.01 SOL account rent (for the Core asset on-chain)
-- ~0.000005 SOL transaction fee
-- **Total: ~0.03 SOL per mint**
+- ~0.0035 SOL account rent (for the Core asset on-chain)
+- ~0.000015 SOL transaction fee
+- **Total: ~0.024 SOL per mint**
 
 ## Other Endpoints
 

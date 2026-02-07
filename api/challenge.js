@@ -35,7 +35,7 @@ module.exports = async (req, res) => {
     instructions: `Find a nonce such that SHA256(challenge + wallet + nonce) starts with ${DIFFICULTY} zeros. Submit via POST /api/mint with { wallet, challenge, nonce }.`,
     mint: {
       description: "After solving the challenge, POST to /api/mint. You'll receive a partially-signed transaction. Sign it with your wallet and submit to Solana.",
-      totalCost: "~0.034 SOL (0.02 SOL mint price + ~0.014 SOL account rent + tx fees)",
+      totalCost: "~0.024 SOL (0.02 SOL mint price + ~0.0035 SOL account rent + tx fees)",
       paidBy: "your wallet (minter pays all costs)",
     },
     solver: {

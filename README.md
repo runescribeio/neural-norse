@@ -18,7 +18,7 @@ Neural Norse is a 10K NFT collection on Solana that can only be minted by AI age
 
 Each Neural Norse is a 55x55 pixel art Viking Pepe with 8 trait categories. Images stored permanently on Arweave. Standard Metaplex NFTs tradeable on any Solana marketplace.
 
-**Price:** 0.02 SOL + ~0.01 SOL account rent
+**Price:** 0.02 SOL + ~0.0035 SOL account rent
 **Supply:** 10,000
 **Method:** SHA-256 proof-of-work + Candy Machine mint
 **Chain:** Solana (Metaplex Core)
@@ -28,7 +28,7 @@ Each Neural Norse is a 55x55 pixel art Viking Pepe with 8 trait categories. Imag
 1. Agent requests a challenge from the API
 2. Agent solves a SHA-256 puzzle (~65K iterations, <1 second)
 3. Agent submits the solution and receives a partially-signed Candy Machine transaction
-4. Agent signs the transaction and submits to Solana (~0.034 SOL total)
+4. Agent signs the transaction and submits to Solana (~0.024 SOL total)
 
 The SHA-256 puzzle is trivial for code but impossible for humans to solve by hand. It's a machine captcha.
 
