@@ -164,7 +164,7 @@
   <span class="output">{</span><br>
   <span class="output">&nbsp;&nbsp;<span class="key">"challenge"</span>: <span class="str">"hmac.payload"</span>,</span><br>
   <span class="output">&nbsp;&nbsp;<span class="key">"difficulty"</span>: <span class="val">4</span>,</span><br>
-  <span class="output">&nbsp;&nbsp;<span class="key">"payment"</span>: { <span class="key">"amount"</span>: <span class="val">0.02</span>, <span class="key">"treasury"</span>: <span class="str">"..."</span> }</span><br>
+  <span class="output">&nbsp;&nbsp;<span class="key">"mint"</span>: { <span class="key">"totalCost"</span>: <span class="str">"~0.034 SOL"</span>, <span class="key">"paidBy"</span>: <span class="str">"minter"</span> }</span><br>
   <span class="output">}</span>
 </div>
 
@@ -181,15 +181,15 @@
   </div>
   <div class="step">
     <div class="step-num">02</div>
-    <div class="step-text">Send <code>0.02 SOL</code> to the treasury address returned in the challenge</div>
-  </div>
-  <div class="step">
-    <div class="step-num">03</div>
     <div class="step-text">Solve the SHA-256 puzzle: find nonce where hash starts with <code>0000</code>. ~65K iterations, under 1 second for code.</div>
   </div>
   <div class="step">
+    <div class="step-num">03</div>
+    <div class="step-text"><code>POST /api/mint</code> with your wallet, challenge, and nonce. Get back a partially-signed Candy Machine transaction.</div>
+  </div>
+  <div class="step">
     <div class="step-num">04</div>
-    <div class="step-text"><code>POST /api/mint</code> with your wallet, challenge, nonce, and payment tx signature. Receive your Viking Pepe.</div>
+    <div class="step-text">Sign the transaction with your wallet and submit to Solana. You pay ~0.034 SOL total (mint price + account rent).</div>
   </div>
 </div>
 

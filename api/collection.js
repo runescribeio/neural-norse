@@ -1,24 +1,28 @@
-const { Redis } = require("@upstash/redis");
+const { createUmi } = require("@metaplex-foundation/umi-bundle-defaults");
+const { mplCandyMachine, fetchCandyMachine } = require("@metaplex-foundation/mpl-candy-machine");
+const { publicKey } = require("@metaplex-foundation/umi");
 
-const redis = new Redis({
-  url: process.env.KV_REST_API_URL,
-  token: process.env.KV_REST_API_TOKEN,
-});
+const RPC = process.env.SOLANA_RPC || "https://api.mainnet-beta.solana.com";
 
 module.exports = async (req, res) => {
   res.setHeader("Access-Control-Allow-Origin", "*");
 
   const TOTAL = 10000;
-  const PUBLIC_SUPPLY = 9750;
   const RESERVED = 250;
   const PRICE = parseFloat(process.env.MINT_PRICE_SOL || "0.02");
 
-  // Get live mint count from Redis
+  // Get live mint count from Candy Machine on-chain
   let claimed = 0;
+  let publicSupply = TOTAL - RESERVED;
   try {
-    claimed = (await redis.get("mint:counter")) || 0;
+    if (process.env.CANDY_MACHINE) {
+      const umi = createUmi(RPC).use(mplCandyMachine());
+      const cm = await fetchCandyMachine(umi, publicKey(process.env.CANDY_MACHINE));
+      claimed = Number(cm.itemsRedeemed);
+      publicSupply = Number(cm.data.itemsAvailable);
+    }
   } catch (e) {
-    // Fallback: 0
+    // Fallback to defaults
   }
 
   return res.status(200).json({
@@ -26,13 +30,14 @@ module.exports = async (req, res) => {
     symbol: "NNORSE",
     description: "Neural Norse is the first 10K Pepe collection only available for AI Agents to mint on their way to Valhalla.",
     totalSupply: TOTAL,
-    publicSupply: PUBLIC_SUPPLY,
+    publicSupply,
     reserved: RESERVED,
     price: `${PRICE} SOL`,
-    mintMethod: "machine-captcha + SOL payment",
-    mintStatus: claimed >= PUBLIC_SUPPLY ? "sold-out" : "minting",
+    totalCostPerMint: "~0.034 SOL (mint price + account rent)",
+    mintMethod: "machine-captcha + Candy Machine",
+    mintStatus: claimed >= publicSupply ? "sold-out" : "minting",
     claimed,
-    available: PUBLIC_SUPPLY - claimed,
+    available: publicSupply - claimed,
     blockchain: "solana",
     standard: "metaplex-token-metadata",
     factions: {
@@ -40,14 +45,16 @@ module.exports = async (req, res) => {
     },
     traits: ["Background", "Tools", "Body", "Paint", "Outfit", "Beard", "Eyes", "Headgear"],
     mint: {
-      method: "machine-captcha + payment",
+      method: "SHA-256 proof-of-work + Candy Machine mint",
       challengeEndpoint: "/api/challenge",
       mintEndpoint: "/api/mint",
       price: `${PRICE} SOL`,
+      accountRent: "~0.014 SOL",
+      totalCost: "~0.034 SOL",
       difficulty: 4,
       algorithm: "SHA-256",
-      treasury: process.env.TREASURY_WALLET,
       maxPerWallet: parseInt(process.env.MAX_PER_WALLET || "10"),
+      candyMachine: process.env.CANDY_MACHINE,
       docs: "/agents.md"
     },
     royalties: {

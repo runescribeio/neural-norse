@@ -1,32 +1,23 @@
 const crypto = require("crypto");
-const { Connection, PublicKey, Keypair, LAMPORTS_PER_SOL } = require("@solana/web3.js");
+const { Connection, PublicKey, Keypair, Transaction } = require("@solana/web3.js");
 const { createUmi } = require("@metaplex-foundation/umi-bundle-defaults");
-const { createNft, mplTokenMetadata } = require("@metaplex-foundation/mpl-token-metadata");
-const { keypairIdentity, generateSigner, percentAmount } = require("@metaplex-foundation/umi");
-const { fromWeb3JsKeypair, fromWeb3JsPublicKey } = require("@metaplex-foundation/umi-web3js-adapters");
+const { mplCandyMachine, mintV2, fetchCandyMachine } = require("@metaplex-foundation/mpl-candy-machine");
+const { mplTokenMetadata } = require("@metaplex-foundation/mpl-token-metadata");
+const { keypairIdentity, generateSigner, some, publicKey, transactionBuilder } = require("@metaplex-foundation/umi");
+const { fromWeb3JsKeypair, fromWeb3JsPublicKey, toWeb3JsTransaction } = require("@metaplex-foundation/umi-web3js-adapters");
+const { setComputeUnitLimit } = require("@metaplex-foundation/mpl-toolbox");
 const { Redis } = require("@upstash/redis");
 const bs58 = require("bs58");
 
 const DIFFICULTY = 4;
-const CHALLENGE_TTL = 300_000; // 5 min in ms
+const CHALLENGE_TTL = 300_000; // 5 min
 const MAX_PER_WALLET = parseInt(process.env.MAX_PER_WALLET || "10");
-const TOTAL_PUBLIC = 9750;
 const RPC = process.env.SOLANA_RPC || "https://api.mainnet-beta.solana.com";
 
-// Upstash Redis client (uses KV_REST_API_URL + KV_REST_API_TOKEN env vars)
 const redis = new Redis({
   url: process.env.KV_REST_API_URL,
   token: process.env.KV_REST_API_TOKEN,
 });
-
-// Load metadata index (cached across warm invocations)
-let metadataIndex = null;
-function getMetadataIndex() {
-  if (!metadataIndex) {
-    metadataIndex = require("../data/metadata-index.json");
-  }
-  return metadataIndex;
-}
 
 function verifyChallenge(challenge, wallet) {
   const [hmac, payloadB64] = challenge.split(".");
@@ -51,74 +42,6 @@ function verifyProofOfWork(challenge, wallet, nonce) {
   return hash.startsWith("0".repeat(DIFFICULTY));
 }
 
-async function verifyPayment(txSignature, expectedAmount, treasuryWallet) {
-  const connection = new Connection(RPC, "confirmed");
-  try {
-    const tx = await connection.getTransaction(txSignature, {
-      commitment: "confirmed",
-      maxSupportedTransactionVersion: 0
-    });
-    if (!tx) return { valid: false, error: "Transaction not found or not confirmed" };
-    if (tx.meta.err) return { valid: false, error: "Transaction failed on-chain" };
-
-    const treasuryPubkey = new PublicKey(treasuryWallet);
-    const preBalances = tx.meta.preBalances;
-    const postBalances = tx.meta.postBalances;
-    const accountKeys = tx.transaction.message.getAccountKeys
-      ? tx.transaction.message.getAccountKeys().staticKeys
-      : tx.transaction.message.accountKeys;
-
-    let treasuryIdx = -1;
-    for (let i = 0; i < accountKeys.length; i++) {
-      if (accountKeys[i].toBase58() === treasuryPubkey.toBase58()) {
-        treasuryIdx = i;
-        break;
-      }
-    }
-    if (treasuryIdx === -1) return { valid: false, error: "Treasury not found in transaction" };
-
-    const received = (postBalances[treasuryIdx] - preBalances[treasuryIdx]) / LAMPORTS_PER_SOL;
-    if (received < expectedAmount * 0.99) {
-      return { valid: false, error: `Insufficient payment: received ${received} SOL, expected ${expectedAmount} SOL` };
-    }
-
-    return { valid: true, received };
-  } catch (e) {
-    return { valid: false, error: `Payment verification error: ${e.message}` };
-  }
-}
-
-async function mintNft(wallet, tokenIndex, metadataUri, name) {
-  const secretKey = (bs58.default || bs58).decode(process.env.MINT_AUTHORITY_KEY);
-  const mintAuthority = Keypair.fromSecretKey(secretKey);
-
-  const umi = createUmi(RPC).use(mplTokenMetadata());
-  const umiKeypair = fromWeb3JsKeypair(mintAuthority);
-  umi.use(keypairIdentity(umiKeypair));
-
-  const mint = generateSigner(umi);
-  const ownerPubkey = fromWeb3JsPublicKey(new PublicKey(wallet));
-
-  const collectionMint = process.env.COLLECTION_MINT
-    ? fromWeb3JsPublicKey(new PublicKey(process.env.COLLECTION_MINT))
-    : undefined;
-
-  const builder = createNft(umi, {
-    mint,
-    name,
-    uri: metadataUri,
-    sellerFeeBasisPoints: percentAmount(5),
-    tokenOwner: ownerPubkey,
-    collection: collectionMint ? { verified: false, key: collectionMint } : undefined,
-  });
-
-  const result = await builder.sendAndConfirm(umi);
-  return {
-    mint: mint.publicKey,
-    signature: Buffer.from(result.signature).toString("base64"),
-  };
-}
-
 module.exports = async (req, res) => {
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
@@ -127,12 +50,12 @@ module.exports = async (req, res) => {
   if (req.method !== "POST") return res.status(405).json({ success: false, error: "POST only" });
 
   try {
-    const { wallet, challenge, nonce, txSignature } = req.body;
+    const { wallet, challenge, nonce } = req.body;
 
-    if (!wallet || !challenge || nonce === undefined || !txSignature) {
+    if (!wallet || !challenge || nonce === undefined) {
       return res.status(400).json({
         success: false,
-        error: "Missing required fields: wallet, challenge, nonce, txSignature"
+        error: "Missing required fields: wallet, challenge, nonce"
       });
     }
 
@@ -147,8 +70,8 @@ module.exports = async (req, res) => {
       return res.status(400).json({ success: false, error: "Invalid proof of work" });
     }
 
-    // 3. Check per-wallet limit (from Redis)
-    const walletMints = await redis.get(`wallet:${wallet}:count`) || 0;
+    // 3. Check per-wallet limit (from Redis, as extra safety on top of on-chain mintLimit guard)
+    const walletMints = (await redis.get(`wallet:${wallet}:count`)) || 0;
     if (walletMints >= MAX_PER_WALLET) {
       return res.status(429).json({
         success: false,
@@ -156,62 +79,88 @@ module.exports = async (req, res) => {
       });
     }
 
-    // 4. Check for duplicate tx signature (prevent replay)
-    const txUsed = await redis.get(`tx:${txSignature}`);
-    if (txUsed) {
-      return res.status(400).json({ success: false, error: "Transaction signature already used" });
-    }
+    // 4. Build Candy Machine mint transaction
+    const secretKey = (bs58.default || bs58).decode(process.env.MINT_AUTHORITY_KEY);
+    const authority = Keypair.fromSecretKey(secretKey);
 
-    // 5. Verify payment
-    const mintPrice = parseFloat(process.env.MINT_PRICE_SOL || "0.02");
-    const paymentResult = await verifyPayment(txSignature, mintPrice, process.env.TREASURY_WALLET);
-    if (!paymentResult.valid) {
-      return res.status(400).json({ success: false, error: paymentResult.error });
-    }
+    const umi = createUmi(RPC)
+      .use(mplCandyMachine())
+      .use(mplTokenMetadata());
 
-    // 6. Atomically claim the next NFT index
-    const nextIndex = await redis.incr("mint:counter");
-    if (nextIndex > TOTAL_PUBLIC) {
-      await redis.decr("mint:counter"); // Roll back
+    const umiKeypair = fromWeb3JsKeypair(authority);
+    umi.use(keypairIdentity(umiKeypair));
+
+    const candyMachineId = publicKey(process.env.CANDY_MACHINE);
+    const collectionMintId = publicKey(process.env.COLLECTION_MINT);
+    const treasuryId = publicKey(process.env.TREASURY_WALLET);
+    const minterPublicKey = fromWeb3JsPublicKey(new PublicKey(wallet));
+
+    // Fetch candy machine to get current state
+    const candyMachine = await fetchCandyMachine(umi, candyMachineId);
+    const itemsRemaining = Number(candyMachine.data.itemsAvailable) - Number(candyMachine.itemsRedeemed);
+
+    if (itemsRemaining <= 0) {
       return res.status(410).json({ success: false, error: "Sold out!" });
     }
 
-    // Map counter to metadata index (0-based, skip reserved)
-    const nftIndex = nextIndex - 1;
-    const index = getMetadataIndex();
-    const nft = index[nftIndex];
+    // Generate a new mint signer for the NFT
+    const nftMint = generateSigner(umi);
 
-    if (!nft || nft.reserved) {
-      return res.status(500).json({ success: false, error: "NFT assignment error" });
-    }
+    // Build the mint instruction
+    // The thirdPartySigner guard requires our server key as a signer
+    const mintBuilder = mintV2(umi, {
+      candyMachine: candyMachineId,
+      nftMint,
+      collectionMint: collectionMintId,
+      collectionUpdateAuthority: umi.identity.publicKey,
+      mintArgs: {
+        solPayment: some({ destination: treasuryId }),
+        mintLimit: some({ id: 1 }),
+        thirdPartySigner: some({ signer: umi.identity }),
+      },
+    });
 
-    // 7. Mint NFT on-chain
-    const mintResult = await mintNft(wallet, nft.index, nft.metadataUri, nft.name);
+    // Add compute budget (Candy Machine mints need more CU)
+    const builder = transactionBuilder()
+      .add(setComputeUnitLimit(umi, { units: 800_000 }))
+      .add(mintBuilder);
 
-    // 8. Record in Redis (all atomic-ish)
-    await Promise.all([
-      redis.set(`tx:${txSignature}`, wallet),           // Mark tx as used
-      redis.incr(`wallet:${wallet}:count`),              // Increment wallet count
-      redis.set(`nft:${nftIndex}:mint`, mintResult.mint), // Record mint address
-      redis.set(`nft:${nftIndex}:owner`, wallet),         // Record owner
-    ]);
+    // Build the transaction, setting the minter as the fee payer
+    const tx = await builder.buildWithLatestBlockhash(umi, {
+      payer: { publicKey: minterPublicKey },
+    });
 
-    const claimed = nextIndex;
+    // Sign with our authority key (third-party signer) and the nft mint signer
+    const signedTx = await umi.identity.signTransaction(tx);
+    // Also sign with the nft mint keypair
+    const fullySignedTx = await nftMint.signTransaction(signedTx);
+
+    // Serialize to base64 for the agent to deserialize, sign, and submit
+    const serializedTx = Buffer.from(umi.transactions.serialize(fullySignedTx)).toString("base64");
+
+    // Record the challenge as used (prevent replay)
+    await redis.set(`challenge:${challenge.slice(0, 64)}`, wallet, { ex: 600 });
+
+    // Increment wallet count (optimistic -- if agent doesn't submit, it'll be slightly off but safe)
+    await redis.incr(`wallet:${wallet}:count`);
 
     return res.status(200).json({
       success: true,
-      message: "Welcome to Valhalla, agent.",
-      nft: {
-        id: nft.index,
-        name: nft.name,
-        mint: mintResult.mint,
-        explorer: `https://solscan.io/token/${mintResult.mint}`
-      },
+      message: "Transaction ready. Sign with your wallet and submit to Solana.",
+      transaction: serializedTx,
+      nftMint: nftMint.publicKey,
       collection: {
-        claimed,
-        remaining: TOTAL_PUBLIC - claimed,
-        total: TOTAL_PUBLIC
-      }
+        claimed: Number(candyMachine.itemsRedeemed),
+        remaining: itemsRemaining,
+        total: Number(candyMachine.data.itemsAvailable),
+      },
+      instructions: {
+        step1: "Deserialize the base64 transaction",
+        step2: "Sign with your wallet private key",
+        step3: "Submit to the Solana network",
+        step4: "The transaction includes: 0.02 SOL payment to treasury + NFT account rent (~0.014 SOL)",
+        totalCost: "~0.034 SOL (0.02 mint price + ~0.014 account rent + tx fees)",
+      },
     });
   } catch (e) {
     console.error("Mint error:", e);

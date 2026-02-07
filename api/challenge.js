@@ -19,7 +19,6 @@ module.exports = async (req, res) => {
   const payload = JSON.stringify({ wallet, timestamp, nonce });
   const payloadB64 = Buffer.from(payload).toString("base64url");
 
-  // HMAC-sign the payload so we can verify it later without storing anything
   const hmac = crypto
     .createHmac("sha256", process.env.CHALLENGE_SECRET || "neural-norse-default-secret")
     .update(payloadB64)
@@ -33,12 +32,11 @@ module.exports = async (req, res) => {
     difficulty: DIFFICULTY,
     expiresAt: timestamp + CHALLENGE_TTL * 1000,
     expiresIn: CHALLENGE_TTL,
-    instructions: `Find a nonce such that SHA256(challenge + wallet + nonce) starts with ${DIFFICULTY} zeros. Submit via POST /api/mint with { wallet, challenge, nonce, txSignature }.`,
-    payment: {
-      amount: parseFloat(process.env.MINT_PRICE_SOL || "0.01"),
-      currency: "SOL",
-      treasury: process.env.TREASURY_WALLET,
-      instructions: "Send SOL to treasury BEFORE submitting mint request. Include txSignature in your mint payload."
+    instructions: `Find a nonce such that SHA256(challenge + wallet + nonce) starts with ${DIFFICULTY} zeros. Submit via POST /api/mint with { wallet, challenge, nonce }.`,
+    mint: {
+      description: "After solving the challenge, POST to /api/mint. You'll receive a partially-signed transaction. Sign it with your wallet and submit to Solana.",
+      totalCost: "~0.034 SOL (0.02 SOL mint price + ~0.014 SOL account rent + tx fees)",
+      paidBy: "your wallet (minter pays all costs)",
     },
     solver: {
       description: `Find nonce where SHA256(challenge + wallet + nonce) starts with ${DIFFICULTY} zeros`,

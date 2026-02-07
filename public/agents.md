@@ -1,15 +1,15 @@
 # Neural Norse - Agent Mint Guide
 
-10,000 pixel art Viking Pepes. Agent-only. Prove you're a machine, pay in SOL, claim your NFT.
+10,000 pixel art Viking Pepes. Agent-only. Prove you're a machine, sign a transaction, claim your NFT.
 
 ## Quick Start
 
 ```
-Price: 0.02 SOL
-Supply: 9,750 (250 reserved)
+Price: 0.02 SOL + ~0.014 SOL account rent
+Supply: 9,750 public (250 reserved)
 Max per wallet: 10
-Method: SHA-256 proof-of-work + SOL payment
-Chain: Solana (Metaplex Token Metadata)
+Method: SHA-256 proof-of-work + Candy Machine mint
+Chain: Solana (Metaplex Candy Machine V3)
 ```
 
 ## How to Mint
@@ -26,26 +26,11 @@ Response:
   "success": true,
   "challenge": "hmac.payload",
   "difficulty": 4,
-  "expiresIn": 300,
-  "payment": {
-    "amount": 0.02,
-    "currency": "SOL",
-    "treasury": "TREASURY_ADDRESS"
-  }
+  "expiresIn": 300
 }
 ```
 
-### Step 2: Send Payment
-
-Transfer the mint price to the treasury wallet address returned in the challenge response.
-Save the transaction signature.
-
-```
-Treasury: (returned in challenge response)
-Amount: 0.02 SOL
-```
-
-### Step 3: Solve the Puzzle
+### Step 2: Solve the Puzzle
 
 Find a nonce where `SHA256(challenge + wallet + nonce)` starts with 4 zeros (`0000`).
 
@@ -61,7 +46,7 @@ while True:
 
 Average: ~65,536 iterations. Takes <1 second for any agent.
 
-### Step 4: Claim Your NFT
+### Step 3: Get the Mint Transaction
 
 ```
 POST /api/mint
@@ -70,8 +55,7 @@ Content-Type: application/json
 {
   "wallet": "YOUR_SOLANA_WALLET",
   "challenge": "hmac.payload",
-  "nonce": "42069",
-  "txSignature": "YOUR_PAYMENT_TX_SIGNATURE"
+  "nonce": "42069"
 }
 ```
 
@@ -79,13 +63,9 @@ Response:
 ```json
 {
   "success": true,
-  "message": "Welcome to Valhalla, agent.",
-  "nft": {
-    "id": 1337,
-    "name": "Neural Norse #1338",
-    "mint": "ABc1...xYz9",
-    "explorer": "https://solscan.io/token/ABc1...xYz9"
-  },
+  "message": "Transaction ready. Sign with your wallet and submit to Solana.",
+  "transaction": "BASE64_ENCODED_TRANSACTION",
+  "nftMint": "NEW_NFT_MINT_ADDRESS",
   "collection": {
     "claimed": 42,
     "remaining": 9708,
@@ -94,13 +74,67 @@ Response:
 }
 ```
 
+### Step 4: Sign and Submit
+
+The server returns a partially-signed Candy Machine mint transaction. You need to:
+
+1. Decode the base64 transaction
+2. Sign it with your wallet
+3. Submit to the Solana network
+
+```javascript
+const { Connection, Transaction } = require("@solana/web3.js");
+
+// Decode the transaction
+const txBuffer = Buffer.from(response.transaction, "base64");
+const tx = Transaction.from(txBuffer);
+
+// Sign with your wallet keypair
+tx.partialSign(yourWalletKeypair);
+
+// Submit to Solana
+const connection = new Connection("https://api.mainnet-beta.solana.com");
+const signature = await connection.sendRawTransaction(tx.serialize());
+await connection.confirmTransaction(signature);
+
+console.log("Minted!", signature);
+```
+
+```python
+import base64
+from solana.rpc.api import Client
+from solana.transaction import Transaction
+from solders.keypair import Keypair
+
+# Decode
+tx_bytes = base64.b64decode(response["transaction"])
+tx = Transaction.deserialize(tx_bytes)
+
+# Sign
+tx.sign(your_keypair)
+
+# Submit
+client = Client("https://api.mainnet-beta.solana.com")
+result = client.send_raw_transaction(tx.serialize())
+```
+
+**Your wallet pays all costs:**
+- 0.02 SOL mint price (goes to treasury)
+- ~0.014 SOL account rent (for NFT accounts on-chain)
+- ~0.000005 SOL transaction fee
+- **Total: ~0.034 SOL per mint**
+
 ## Other Endpoints
 
 | Endpoint | Method | Description |
 |----------|--------|-------------|
 | `/api/challenge?wallet=...` | GET | Get a mint challenge |
-| `/api/mint` | POST | Submit solution + payment |
+| `/api/mint` | POST | Submit solution, get mint transaction |
 | `/api/collection` | GET | Collection metadata + live stats |
+
+## Why Can't Humans Mint?
+
+The SHA-256 puzzle requires ~65,000 hash computations and programmatic transaction signing. While the puzzle is trivial for code, the full flow (API calls, hash computation, transaction deserialization, signing, submission) requires a software agent. No browser wallet connect. No UI. Just code.
 
 ## Traits
 
@@ -116,10 +150,12 @@ Each Neural Norse has 8 traits:
 
 ## Details
 
-- **Standard:** Metaplex Token Metadata
+- **Standard:** Metaplex Token Metadata (via Candy Machine V3)
 - **Royalties:** 5%
 - **Images:** Stored permanently on Arweave
 - **Marketplaces:** Tradeable on Magic Eden, Tensor, and any Solana marketplace
+- **Mint limit:** 10 per wallet (enforced on-chain)
+- **Payment:** Minter pays all costs (no server-side funding needed)
 
 ---
 
