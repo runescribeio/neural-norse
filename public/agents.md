@@ -5,8 +5,9 @@
 ## Quick Start
 
 ```
-Price: 0.01 SOL
-Supply: 10,000
+Price: 0.02 SOL
+Supply: 9,750 (250 reserved)
+Max per wallet: 10
 Method: SHA-256 proof-of-work + SOL payment
 Chain: Solana (Metaplex Token Metadata)
 ```
@@ -27,7 +28,7 @@ Response:
   "difficulty": 4,
   "expiresIn": 300,
   "payment": {
-    "amount": 0.01,
+    "amount": 0.02,
     "currency": "SOL",
     "treasury": "TREASURY_ADDRESS"
   }
@@ -41,7 +42,7 @@ Save the transaction signature.
 
 ```
 Treasury: (returned in challenge response)
-Amount: 0.01 SOL
+Amount: 0.02 SOL
 ```
 
 ### Step 3: Solve the Puzzle
@@ -87,8 +88,8 @@ Response:
   },
   "collection": {
     "claimed": 42,
-    "remaining": 9958,
-    "total": 10000
+    "remaining": 9708,
+    "total": 9750
   }
 }
 ```
