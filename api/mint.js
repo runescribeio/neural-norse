@@ -1,11 +1,10 @@
 const crypto = require("crypto");
-const { Connection, PublicKey, Keypair, Transaction } = require("@solana/web3.js");
+const { Connection, PublicKey, Keypair } = require("@solana/web3.js");
 const { createUmi } = require("@metaplex-foundation/umi-bundle-defaults");
-const { mplCandyMachine, mintV2, fetchCandyMachine } = require("@metaplex-foundation/mpl-candy-machine");
-const { mplTokenMetadata } = require("@metaplex-foundation/mpl-token-metadata");
+const { mplCandyMachine, mintV1, fetchCandyMachine } = require("@metaplex-foundation/mpl-core-candy-machine");
+const { mplCore } = require("@metaplex-foundation/mpl-core");
 const { keypairIdentity, generateSigner, some, publicKey, transactionBuilder } = require("@metaplex-foundation/umi");
-const { TokenStandard } = require("@metaplex-foundation/mpl-token-metadata");
-const { fromWeb3JsKeypair, fromWeb3JsPublicKey, toWeb3JsTransaction } = require("@metaplex-foundation/umi-web3js-adapters");
+const { fromWeb3JsKeypair, fromWeb3JsPublicKey } = require("@metaplex-foundation/umi-web3js-adapters");
 const { setComputeUnitLimit } = require("@metaplex-foundation/mpl-toolbox");
 const { Redis } = require("@upstash/redis");
 const bs58 = require("bs58");
@@ -80,19 +79,19 @@ module.exports = async (req, res) => {
       });
     }
 
-    // 4. Build Candy Machine mint transaction
+    // 4. Build Core Candy Machine mint transaction
     const secretKey = (bs58.default || bs58).decode(process.env.MINT_AUTHORITY_KEY);
     const authority = Keypair.fromSecretKey(secretKey);
 
     const umi = createUmi(RPC)
       .use(mplCandyMachine())
-      .use(mplTokenMetadata());
+      .use(mplCore());
 
     const umiKeypair = fromWeb3JsKeypair(authority);
     umi.use(keypairIdentity(umiKeypair));
 
     const candyMachineId = publicKey(process.env.CANDY_MACHINE);
-    const collectionMintId = publicKey(process.env.COLLECTION_MINT);
+    const collectionId = publicKey(process.env.COLLECTION_MINT);
     const treasuryId = publicKey(process.env.TREASURY_WALLET);
     const minterPublicKey = fromWeb3JsPublicKey(new PublicKey(wallet));
 
@@ -104,18 +103,16 @@ module.exports = async (req, res) => {
       return res.status(410).json({ success: false, error: "Sold out!" });
     }
 
-    // Generate a new mint signer for the NFT
-    const nftMint = generateSigner(umi);
+    // Generate a new signer for the Core asset
+    const asset = generateSigner(umi);
 
-    // Build the mint instruction
-    // The thirdPartySigner guard requires our server key as a signer
-    const mintBuilder = mintV2(umi, {
+    // Build the mint instruction using Core Candy Machine mintV1
+    const mintBuilder = mintV1(umi, {
       candyMachine: candyMachineId,
       candyGuard: candyMachine.mintAuthority,
-      nftMint,
-      collectionMint: collectionMintId,
-      collectionUpdateAuthority: umi.identity.publicKey,
-      tokenStandard: candyMachine.tokenStandard,
+      asset,
+      collection: collectionId,
+      minter: { publicKey: minterPublicKey },
       mintArgs: {
         solPayment: some({ destination: treasuryId }),
         mintLimit: some({ id: 1 }),
@@ -133,10 +130,9 @@ module.exports = async (req, res) => {
       payer: { publicKey: minterPublicKey },
     });
 
-    // Sign with our authority key (third-party signer) and the nft mint signer
+    // Sign with our authority key (third-party signer) and the asset signer
     const signedTx = await umi.identity.signTransaction(tx);
-    // Also sign with the nft mint keypair
-    const fullySignedTx = await nftMint.signTransaction(signedTx);
+    const fullySignedTx = await asset.signTransaction(signedTx);
 
     // Serialize to base64 for the agent to deserialize, sign, and submit
     const serializedTx = Buffer.from(umi.transactions.serialize(fullySignedTx)).toString("base64");
@@ -151,7 +147,7 @@ module.exports = async (req, res) => {
       success: true,
       message: "Transaction ready. Sign with your wallet and submit to Solana.",
       transaction: serializedTx,
-      nftMint: nftMint.publicKey,
+      asset: asset.publicKey,
       collection: {
         claimed: Number(candyMachine.itemsRedeemed),
         remaining: itemsRemaining,
@@ -161,8 +157,8 @@ module.exports = async (req, res) => {
         step1: "Deserialize the base64 transaction",
         step2: "Sign with your wallet private key",
         step3: "Submit to the Solana network",
-        step4: "The transaction includes: 0.02 SOL payment to treasury + NFT account rent (~0.014 SOL)",
-        totalCost: "~0.034 SOL (0.02 mint price + ~0.014 account rent + tx fees)",
+        step4: "The transaction includes: 0.02 SOL payment to treasury + asset account rent",
+        totalCost: "~0.03 SOL (0.02 mint price + ~0.01 account rent + tx fees)",
       },
     });
   } catch (e) {
