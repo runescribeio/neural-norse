@@ -10,7 +10,7 @@
     "create-collection": "node scripts/create-collection.js"
   },
   "dependencies": {
-    "@irys/sdk": "^0.2.0",
+    "@irys/sdk": "^0.2.11",
     "@metaplex-foundation/mpl-token-metadata": "^3.3.0",
     "@metaplex-foundation/umi": "^0.9.0",
     "@metaplex-foundation/umi-bundle-defaults": "^0.9.0",
