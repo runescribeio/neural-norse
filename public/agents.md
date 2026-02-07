@@ -5,11 +5,11 @@
 ## Quick Start
 
 ```
-Price: 0.02 SOL + ~0.014 SOL account rent
+Price: 0.02 SOL + ~0.01 SOL account rent
 Supply: 9,750 public (250 reserved)
 Max per wallet: 10
-Method: SHA-256 proof-of-work + Candy Machine mint
-Chain: Solana (Metaplex Candy Machine V3)
+Method: SHA-256 proof-of-work + Core Candy Machine mint
+Chain: Solana (Metaplex Core)
 ```
 
 ## How to Mint
@@ -64,8 +64,8 @@ Response:
 {
   "success": true,
   "message": "Transaction ready. Sign with your wallet and submit to Solana.",
-  "transaction": "BASE64_ENCODED_TRANSACTION",
-  "nftMint": "NEW_NFT_MINT_ADDRESS",
+  "transaction": "BASE64_ENCODED_VERSIONED_TRANSACTION",
+  "asset": "NEW_CORE_ASSET_ADDRESS",
   "collection": {
     "claimed": 42,
     "remaining": 9708,
@@ -76,26 +76,29 @@ Response:
 
 ### Step 4: Sign and Submit
 
-The server returns a partially-signed Candy Machine mint transaction. You need to:
+The server returns a partially-signed **VersionedTransaction**. You need to:
 
 1. Decode the base64 transaction
-2. Sign it with your wallet
+2. Sign it with your wallet (you are the fee payer)
 3. Submit to the Solana network
 
 ```javascript
-const { Connection, Transaction } = require("@solana/web3.js");
+const { Connection, Keypair, VersionedTransaction } = require("@solana/web3.js");
 
-// Decode the transaction
+// Decode the versioned transaction
 const txBuffer = Buffer.from(response.transaction, "base64");
-const tx = Transaction.from(txBuffer);
+const vtx = VersionedTransaction.deserialize(new Uint8Array(txBuffer));
 
 // Sign with your wallet keypair
-tx.partialSign(yourWalletKeypair);
+vtx.sign([yourWalletKeypair]);
 
 // Submit to Solana
-const connection = new Connection("https://api.mainnet-beta.solana.com");
-const signature = await connection.sendRawTransaction(tx.serialize());
-await connection.confirmTransaction(signature);
+const connection = new Connection("https://api.mainnet-beta.solana.com", "confirmed");
+const signature = await connection.sendRawTransaction(vtx.serialize(), {
+  skipPreflight: true,
+  maxRetries: 3,
+});
+await connection.confirmTransaction(signature, "confirmed");
 
 console.log("Minted!", signature);
 ```
@@ -103,26 +106,26 @@ console.log("Minted!", signature);
 ```python
 import base64
 from solana.rpc.api import Client
-from solana.transaction import Transaction
 from solders.keypair import Keypair
+from solders.transaction import VersionedTransaction
 
-# Decode
+# Decode the versioned transaction
 tx_bytes = base64.b64decode(response["transaction"])
-tx = Transaction.deserialize(tx_bytes)
+vtx = VersionedTransaction.from_bytes(tx_bytes)
 
-# Sign
-tx.sign(your_keypair)
+# Sign with your wallet keypair
+vtx.sign([your_keypair])
 
-# Submit
+# Submit to Solana
 client = Client("https://api.mainnet-beta.solana.com")
-result = client.send_raw_transaction(tx.serialize())
+result = client.send_raw_transaction(bytes(vtx))
 ```
 
 **Your wallet pays all costs:**
 - 0.02 SOL mint price (goes to treasury)
-- ~0.014 SOL account rent (for NFT accounts on-chain)
+- ~0.01 SOL account rent (for the Core asset on-chain)
 - ~0.000005 SOL transaction fee
-- **Total: ~0.034 SOL per mint**
+- **Total: ~0.03 SOL per mint**
 
 ## Other Endpoints
 
@@ -150,7 +153,7 @@ Each Neural Norse has 8 traits:
 
 ## Details
 
-- **Standard:** Metaplex Token Metadata (via Candy Machine V3)
+- **Standard:** Metaplex Core (via Core Candy Machine)
 - **Royalties:** 5%
 - **Images:** Stored permanently on Arweave
 - **Marketplaces:** Tradeable on Magic Eden, Tensor, and any Solana marketplace
