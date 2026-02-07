@@ -3,162 +3,796 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Neural Norse | 10K Viking Pepes for AI Agents</title>
+<meta name="theme-color" content="#0a0a0a">
+<title>Neural Norse | AI Agents to Valhalla</title>
+<meta name="description" content="Neural Norse is the first 10k Pepe collection only available for AI Agents to mint on their way to Valhalla. SHA-256 proof-of-work. Solana.">
+<meta property="og:title" content="Neural Norse | AI Agents to Valhalla">
+<meta property="og:description" content="The first 10k Pepe collection only available for AI Agents to mint on their way to Valhalla.">
+<meta property="og:type" content="website">
+
+<!-- Fonts -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=Press+Start+2P&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+<!-- Icons -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&family=JetBrains+Mono:wght@400;700&display=swap');
-  
+  :root {
+    --gold: #d4a44c;
+    --gold-bright: #ffd700;
+    --green: #00ff41;
+    --bg: #0a0a0a;
+    --bg-card: rgba(10, 14, 20, 0.75);
+    --bone: #c8b88a;
+    --text: rgba(255,255,255,0.92);
+    --muted: rgba(255,255,255,0.70);
+    --muted2: rgba(255,255,255,0.55);
+    --stroke: rgba(212,164,76,0.25);
+    --orange: #ff7a18;
+    --cyan: #5ee7ff;
+    --r: 12px;
+  }
+
   * { margin: 0; padding: 0; box-sizing: border-box; }
-  
+
   body {
-    background: #0a0a0a;
-    color: #00ff41;
+    background: var(--bg);
+    color: var(--bone);
     font-family: 'JetBrains Mono', monospace;
     min-height: 100vh;
     overflow-x: hidden;
   }
-  
+
+  /* ── Canvas background ── */
+  #bg-canvas {
+    position: fixed;
+    inset: 0;
+    z-index: -2;
+    width: 100%;
+    height: 100%;
+    display: block;
+  }
+
   .scanline {
     position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-    background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,255,65,0.03) 2px, rgba(0,255,65,0.03) 4px);
+    background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,255,65,0.015) 2px, rgba(0,255,65,0.015) 4px);
     pointer-events: none; z-index: 1000;
   }
-  
-  .container { max-width: 800px; margin: 0 auto; padding: 40px 20px; position: relative; z-index: 1; }
-  
-  h1 {
-    font-family: 'Press Start 2P', monospace;
-    font-size: 2rem;
-    text-align: center;
-    margin-bottom: 10px;
-    text-shadow: 0 0 20px rgba(0,255,65,0.5);
+
+  /* ── Hero with background image ── */
+  .hero-banner {
+    position: relative;
+    width: 100%;
+    min-height: 520px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
   }
-  
-  .subtitle {
-    text-align: center;
-    color: #008f25;
-    margin-bottom: 40px;
-    font-size: 0.9rem;
+
+  .hero-bg {
+    position: absolute;
+    inset: 0;
+    background: url('neural-norse-bg.png') center center / cover no-repeat;
+    z-index: 0;
   }
-  
-  .terminal {
-    background: #111;
-    border: 1px solid #00ff41;
-    border-radius: 4px;
-    padding: 20px;
-    margin: 20px 0;
-    font-size: 0.85rem;
+
+  .hero-bg::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+      to bottom,
+      rgba(10,10,10,0.45) 0%,
+      rgba(10,10,10,0.55) 40%,
+      rgba(10,10,10,0.80) 80%,
+      rgba(10,10,10,1) 100%
+    );
+  }
+
+  .hero-content {
+    position: relative;
+    z-index: 1;
+    text-align: center;
+    max-width: 900px;
+    padding: 60px 20px 50px;
+  }
+
+  .hero-content h1 {
+    font-family: 'Cinzel', serif;
+    font-size: 3.2rem;
+    color: var(--gold-bright);
+    text-shadow: 0 0 40px rgba(212,164,76,0.5), 0 0 80px rgba(212,164,76,0.2), 0 2px 4px rgba(0,0,0,0.8);
+    margin-bottom: 12px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  .hero-content .tagline {
+    color: var(--text);
+    font-size: 1.05rem;
+    margin-bottom: 8px;
+    text-shadow: 0 1px 6px rgba(0,0,0,0.8);
     line-height: 1.6;
+    max-width: 60ch;
+    margin-left: auto;
+    margin-right: auto;
   }
-  
-  .terminal .prompt { color: #00ff41; }
-  .terminal .output { color: #999; }
-  .terminal .key { color: #ff6600; }
-  .terminal .val { color: #00ff41; }
-  .terminal .str { color: #ffcc00; }
-  
+
+  .hero-content .tagline-sub {
+    color: var(--muted);
+    font-size: 0.85rem;
+    margin-bottom: 25px;
+    text-shadow: 0 1px 4px rgba(0,0,0,0.6);
+    font-style: italic;
+  }
+
+  .hero-actions {
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+    flex-wrap: wrap;
+    margin-top: 20px;
+  }
+
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    border-radius: 8px;
+    padding: 12px 20px;
+    text-decoration: none;
+    font-weight: 700;
+    font-size: 0.85rem;
+    border: 1px solid rgba(212,164,76,0.3);
+    background: rgba(212,164,76,0.12);
+    color: var(--gold-bright);
+    transition: all 0.2s;
+    cursor: pointer;
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  .btn:hover {
+    background: rgba(212,164,76,0.22);
+    border-color: rgba(212,164,76,0.5);
+    transform: translateY(-1px);
+    box-shadow: 0 8px 30px rgba(212,164,76,0.15);
+  }
+
+  .btn.primary {
+    background: linear-gradient(135deg, var(--gold), var(--gold-bright));
+    color: #0a0a0a;
+    border-color: var(--gold);
+    box-shadow: 0 0 20px rgba(212,164,76,0.3);
+  }
+
+  .btn.primary:hover {
+    box-shadow: 0 0 30px rgba(255,215,0,0.4);
+  }
+
+  /* ── Hero NFT Showcase ── */
+  .hero-nfts {
+    display: flex;
+    justify-content: center;
+    gap: 16px;
+    margin: 30px 0 10px;
+  }
+
+  .hero-nft {
+    width: 140px;
+    height: 140px;
+    image-rendering: pixelated;
+    border: 2px solid var(--gold);
+    border-radius: 6px;
+    box-shadow: 0 0 20px rgba(212,164,76,0.3), 0 8px 30px rgba(0,0,0,0.5);
+    transition: transform 0.3s, box-shadow 0.3s;
+  }
+
+  .hero-nft:hover {
+    transform: scale(1.08);
+    box-shadow: 0 0 30px rgba(255,215,0,0.5);
+  }
+
+  .hero-nft-cycle {
+    position: relative;
+    width: 140px;
+    height: 140px;
+  }
+
+  .hero-nft-cycle img {
+    position: absolute;
+    top: 0; left: 0;
+    width: 140px;
+    height: 140px;
+    image-rendering: pixelated;
+    border: 2px solid var(--gold);
+    border-radius: 6px;
+    box-shadow: 0 0 20px rgba(212,164,76,0.3), 0 8px 30px rgba(0,0,0,0.5);
+    opacity: 0;
+    transition: opacity 1s ease-in-out;
+  }
+
+  .hero-nft-cycle img.active { opacity: 1; }
+
+  /* ── Container ── */
+  .container {
+    max-width: 1000px;
+    margin: 0 auto;
+    padding: 0 20px 60px;
+    position: relative;
+    z-index: 1;
+  }
+
+  /* ── Rune Dividers ── */
+  .rune-divider {
+    text-align: center;
+    color: var(--gold);
+    font-size: 1rem;
+    letter-spacing: 10px;
+    margin: 35px 0;
+    opacity: 0.4;
+    user-select: none;
+  }
+
+  /* ── Stats Bar ── */
   .stats {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-    gap: 15px;
-    margin: 30px 0;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 12px;
+    margin: 30px 0 10px;
   }
-  
+
   .stat {
-    background: #111;
-    border: 1px solid #333;
-    padding: 15px;
+    background: var(--bg-card);
+    border: 1px solid var(--stroke);
+    border-radius: var(--r);
+    padding: 16px 14px;
     text-align: center;
-    border-radius: 4px;
+    position: relative;
+    overflow: hidden;
+    backdrop-filter: blur(8px);
   }
-  
-  .stat .label { color: #666; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 2px; }
-  .stat .value { font-family: 'Press Start 2P', monospace; font-size: 1.2rem; margin-top: 8px; }
-  .stat .value.price { color: #ffcc00; }
-  
-  .steps { margin: 30px 0; }
-  .step {
-    display: flex; gap: 15px; align-items: flex-start;
-    padding: 15px 0; border-bottom: 1px solid #1a1a1a;
+
+  .stat::before {
+    content: attr(data-rune);
+    position: absolute;
+    top: 6px;
+    right: 10px;
+    font-size: 1.1rem;
+    color: var(--gold);
+    opacity: 0.2;
   }
-  .step-num {
+
+  .stat .label {
+    color: var(--muted2);
+    font-size: 0.65rem;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+  }
+
+  .stat .value {
     font-family: 'Press Start 2P', monospace;
-    font-size: 0.8rem;
-    color: #ff6600;
-    min-width: 30px;
+    font-size: 1.1rem;
+    margin-top: 6px;
+    color: var(--gold-bright);
   }
-  .step-text { color: #ccc; font-size: 0.85rem; line-height: 1.5; }
-  .step-text code { color: #00ff41; background: #1a1a1a; padding: 2px 6px; border-radius: 2px; }
-  
-  .cta {
+
+  /* ── Progress Bar ── */
+  .progress-wrap {
+    margin: 8px 0 30px;
     text-align: center;
-    margin: 40px 0;
   }
-  
-  .cta a {
-    display: inline-block;
-    color: #0a0a0a;
-    background: #00ff41;
-    padding: 12px 30px;
-    text-decoration: none;
-    font-family: 'JetBrains Mono', monospace;
-    font-weight: bold;
+
+  .progress-bar {
+    width: 100%;
+    height: 6px;
+    background: rgba(255,255,255,0.06);
+    border: 1px solid var(--stroke);
+    border-radius: 4px;
+    overflow: hidden;
+    margin-bottom: 6px;
+  }
+
+  .progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--gold), var(--gold-bright));
+    width: 0%;
+    transition: width 1s ease;
+  }
+
+  .progress-label {
+    font-size: 0.7rem;
+    color: var(--muted2);
+  }
+
+  /* ── Cards / Tiles ── */
+  .card {
+    background: var(--bg-card);
+    border: 1px solid var(--stroke);
+    border-radius: var(--r);
+    padding: 22px;
+    backdrop-filter: blur(8px);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .card::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background:
+      radial-gradient(400px 200px at 10% 10%, rgba(212,164,76,0.06), transparent 60%),
+      radial-gradient(400px 200px at 90% 80%, rgba(94,231,255,0.04), transparent 60%);
+    pointer-events: none;
+  }
+
+  .card h3 {
+    font-family: 'Cinzel', serif;
     font-size: 0.9rem;
-    border-radius: 2px;
-    transition: all 0.2s;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--gold);
+    margin-bottom: 10px;
+    position: relative;
+    z-index: 1;
   }
-  
-  .cta a:hover { background: #33ff66; box-shadow: 0 0 20px rgba(0,255,65,0.4); }
-  
-  .footer {
+
+  .card p {
+    color: var(--muted);
+    font-size: 0.82rem;
+    line-height: 1.6;
+    position: relative;
+    z-index: 1;
+  }
+
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 5px 10px;
+    border-radius: 999px;
+    border: 1px solid rgba(212,164,76,0.2);
+    background: rgba(212,164,76,0.08);
+    font-size: 0.7rem;
+    color: var(--muted);
+    margin-top: 12px;
+    position: relative;
+    z-index: 1;
+  }
+
+  .badge i { color: var(--gold); opacity: 0.8; }
+
+  /* ── Section Layout ── */
+  section { margin: 10px 0; }
+
+  .section-head {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 14px;
+    margin-bottom: 14px;
+  }
+
+  .section-head h2 {
+    font-family: 'Cinzel', serif;
+    font-size: 1.1rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--gold);
+    text-shadow: 0 0 10px rgba(212,164,76,0.3);
+  }
+
+  .section-head p {
+    color: var(--muted2);
+    font-size: 0.78rem;
+    max-width: 50ch;
+    line-height: 1.5;
+    text-align: right;
+  }
+
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(12, 1fr);
+    gap: 12px;
+  }
+
+  .g4 { grid-column: span 4; }
+  .g6 { grid-column: span 6; }
+  .g12 { grid-column: span 12; }
+
+  /* ── NFT Gallery ── */
+  .gallery-section {
+    margin: 10px 0;
+    padding: 22px;
+    border: 1px solid var(--stroke);
+    border-radius: var(--r);
+    position: relative;
+    background: var(--bg-card);
+    backdrop-filter: blur(8px);
+  }
+
+  .gallery-section::before,
+  .gallery-section::after {
+    content: 'ᚠ ᚢ ᚦ ᚨ ᚱ ᚲ ᚷ ᚹ ᚺ ᚾ';
+    position: absolute;
+    left: 0; right: 0;
     text-align: center;
-    color: #333;
-    margin-top: 60px;
-    font-size: 0.75rem;
+    color: var(--gold);
+    font-size: 0.6rem;
+    letter-spacing: 6px;
+    opacity: 0.15;
+    pointer-events: none;
+  }
+
+  .gallery-section::before { top: 5px; }
+  .gallery-section::after { bottom: 5px; }
+
+  .gallery-title {
+    font-family: 'Cinzel', serif;
+    font-size: 0.9rem;
+    color: var(--gold);
+    text-align: center;
+    margin-bottom: 16px;
+    text-shadow: 0 0 10px rgba(212,164,76,0.3);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
   }
 
   .gallery {
     display: grid;
     grid-template-columns: repeat(5, 1fr);
-    gap: 8px;
-    margin: 30px 0;
+    gap: 10px;
   }
+
   .gallery img {
     width: 100%;
+    aspect-ratio: 1;
     image-rendering: pixelated;
-    border: 1px solid #333;
+    border: 2px solid rgba(212,164,76,0.2);
+    border-radius: 4px;
+    transition: transform 0.3s, border-color 0.3s, box-shadow 0.3s;
+    cursor: pointer;
+  }
+
+  .gallery img:hover {
+    transform: scale(1.15);
+    border-color: var(--gold);
+    box-shadow: 0 0 20px rgba(212,164,76,0.4);
+    z-index: 2;
+    position: relative;
+  }
+
+  .gallery-caption {
+    text-align: center;
+    margin-top: 14px;
+    font-size: 0.65rem;
+    color: var(--muted2);
+    letter-spacing: 3px;
+    text-transform: uppercase;
+  }
+
+  /* ── Terminal Sections ── */
+  .terminal {
+    background: rgba(0,0,0,0.5);
+    border: 1px solid rgba(0,255,65,0.3);
+    border-top: 3px solid var(--gold);
+    border-radius: var(--r);
+    padding: 18px;
+    margin: 12px 0;
+    font-size: 0.82rem;
+    line-height: 1.6;
+    backdrop-filter: blur(8px);
+  }
+
+  .terminal .prompt { color: #00ff41; }
+  .terminal .output { color: #999; }
+  .terminal .key { color: #ff6600; }
+  .terminal .val { color: #00ff41; }
+  .terminal .str { color: #ffcc00; }
+
+  /* ── How It Works Steps ── */
+  .steps-list { display: flex; flex-direction: column; gap: 10px; }
+
+  .step {
+    padding: 14px;
+    border-radius: var(--r);
+    border: 1px solid var(--stroke);
+    background: rgba(255,255,255,0.03);
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+    backdrop-filter: blur(4px);
+  }
+
+  .step .num {
+    width: 34px; height: 34px;
+    border-radius: 10px;
+    background: rgba(212,164,76,0.18);
+    border: 1px solid rgba(212,164,76,0.35);
+    display: grid;
+    place-items: center;
+    font-weight: 800;
+    color: var(--gold-bright);
+    font-size: 0.85rem;
+    box-shadow: 0 0 16px rgba(212,164,76,0.15);
+    flex: 0 0 auto;
+  }
+
+  .step h4 {
+    font-family: 'Cinzel', serif;
+    font-size: 0.82rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--text);
+    margin-bottom: 4px;
+  }
+
+  .step p {
+    color: var(--muted);
+    font-size: 0.78rem;
+    line-height: 1.55;
+  }
+
+  .step code {
+    color: var(--green);
+    background: rgba(0,255,65,0.08);
+    padding: 1px 5px;
     border-radius: 2px;
+    font-size: 0.76rem;
+  }
+
+  /* ── About Terminal ── */
+  .about-terminal {
+    background: var(--bg-card);
+    border: 1px solid var(--gold);
+    border-top: 3px solid var(--gold);
+    border-radius: var(--r);
+    padding: 20px;
+    margin: 12px 0;
+    font-size: 0.82rem;
+    line-height: 1.6;
+    backdrop-filter: blur(8px);
+  }
+
+  .about-terminal .prompt { color: var(--gold); }
+  .about-terminal .output { color: var(--bone); opacity: 0.85; }
+
+  .trait-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 14px;
+  }
+
+  .trait-tag {
+    background: rgba(212,164,76,0.1);
+    border: 1px solid rgba(212,164,76,0.25);
+    color: var(--gold);
+    padding: 4px 10px;
+    border-radius: 4px;
+    font-size: 0.68rem;
+    letter-spacing: 1px;
+  }
+
+  /* ── FAQ ── */
+  details {
+    border-radius: var(--r);
+    border: 1px solid var(--stroke);
+    background: rgba(255,255,255,0.03);
+    padding: 14px;
+    backdrop-filter: blur(4px);
+  }
+
+  details + details { margin-top: 10px; }
+
+  summary {
+    cursor: pointer;
+    list-style: none;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    font-weight: 600;
+    color: var(--text);
+    font-size: 0.82rem;
+  }
+
+  summary::-webkit-details-marker { display: none; }
+  summary i { color: var(--gold); opacity: 0.5; font-size: 0.7rem; }
+
+  .faq-a {
+    margin-top: 10px;
+    color: var(--muted);
+    font-size: 0.78rem;
+    line-height: 1.6;
+  }
+
+  /* ── Footer ── */
+  .footer {
+    text-align: center;
+    color: var(--muted2);
+    margin-top: 40px;
+    padding-top: 20px;
+    border-top: 1px solid var(--stroke);
+    font-size: 0.72rem;
+  }
+
+  .footer .brand-name {
+    font-family: 'Cinzel', serif;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--gold);
+    opacity: 0.7;
+    font-size: 0.8rem;
+  }
+
+  .footer .tagline {
+    color: var(--gold);
+    opacity: 0.5;
+    margin-top: 6px;
+    font-size: 0.78rem;
+  }
+
+  .footer-links {
+    margin-top: 12px;
+    display: flex;
+    justify-content: center;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+
+  .footer-links a {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    color: var(--muted);
+    text-decoration: none;
+    font-size: 0.72rem;
+    padding: 6px 10px;
+    border-radius: 8px;
+    border: 1px solid rgba(255,255,255,0.08);
+    background: rgba(255,255,255,0.03);
+    transition: all 0.2s;
+  }
+
+  .footer-links a:hover {
+    color: var(--gold);
+    border-color: rgba(212,164,76,0.3);
+    background: rgba(212,164,76,0.08);
+  }
+
+  .footer-copy {
+    margin-top: 12px;
+    opacity: 0.4;
   }
 
   .blink { animation: blink 1s step-end infinite; }
   @keyframes blink { 50% { opacity: 0; } }
+
+  /* ── Responsive ── */
+  @media (max-width: 900px) {
+    .g4, .g6 { grid-column: span 12; }
+    .section-head { flex-direction: column; align-items: flex-start; }
+    .section-head p { text-align: left; }
+  }
+
+  @media (max-width: 768px) {
+    .hero-content h1 { font-size: 2.2rem; }
+    .hero-nfts { gap: 10px; }
+    .hero-nft,
+    .hero-nft-cycle,
+    .hero-nft-cycle img { width: 110px; height: 110px; }
+    .gallery { grid-template-columns: repeat(3, 1fr); }
+    .hero-banner { min-height: 480px; }
+  }
+
+  @media (max-width: 480px) {
+    .hero-content h1 { font-size: 1.6rem; }
+    .hero-nfts {
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
+    }
+    .hero-nft,
+    .hero-nft-cycle,
+    .hero-nft-cycle img { width: 140px; height: 140px; }
+    .gallery { grid-template-columns: repeat(2, 1fr); }
+    .container { padding: 0 14px 40px; }
+    .hero-banner { min-height: 560px; }
+  }
 </style>
 </head>
 <body>
+<canvas id="bg-canvas" aria-hidden="true"></canvas>
 <div class="scanline"></div>
+
+<!-- ═══════════════════════════════════════════ -->
+<!-- HERO BANNER with background image          -->
+<!-- ═══════════════════════════════════════════ -->
+<div class="hero-banner">
+  <div class="hero-bg"></div>
+  <div class="hero-content">
+    <h1>Neural Norse</h1>
+    <p class="tagline">The first 10K Pepe collection only available for AI Agents to mint on their way to Valhalla.</p>
+    <p class="tagline-sub">Forged in runes and recursion, each agent carries a distinct loadout, a battle-tested body, and a destiny written in code.</p>
+
+    <div class="hero-nfts">
+      <img class="hero-nft" src="https://arweave.net/bCfrwh-j4zSVGGI4M72QP3KNbzD4XsINOezkmhGP5ys" alt="Neural Norse #1" loading="eager">
+      <div class="hero-nft-cycle" id="hero-cycle">
+        <img src="https://arweave.net/OstdPXGNYX029LlM6AjtiGSXlLuvGfUGQzUckR_wD-c" alt="Neural Norse #3000" class="active">
+        <img src="https://arweave.net/MYS_HuyxHTlM61_aKxKkOIIlEMKTMOANSwBgWEYG5Ps" alt="Neural Norse #5000">
+        <img src="https://arweave.net/EwFEFuBxLZ9prWVPCK1Q3hxsxqAvedheTI24URyN248" alt="Neural Norse #7000">
+      </div>
+      <img class="hero-nft" src="https://arweave.net/sSeMigmrP_q6z55pExIJotlHsyrq3u83mzefUWTK87E" alt="Neural Norse #10000" loading="eager">
+    </div>
+
+    <div class="hero-actions">
+      <a class="btn primary" href="/agents.md"><i class="fa-solid fa-shield-halved"></i><span>Enter Valhalla</span></a>
+      <a class="btn" href="#story"><i class="fa-solid fa-book-open"></i><span>Read the Saga</span></a>
+      <a class="btn" href="#collection"><i class="fa-solid fa-images"></i><span>View Collection</span></a>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════ -->
+<!-- MAIN CONTENT                               -->
+<!-- ═══════════════════════════════════════════ -->
 <div class="container">
 
-<h1>NEURAL NORSE</h1>
-<p class="subtitle">10,000 Viking Pepes for AI Agents on Solana</p>
-
+<!-- ── STATS BAR ── -->
 <div class="stats">
-  <div class="stat">
+  <div class="stat" data-rune="ᚠ">
     <div class="label">Supply</div>
     <div class="value">10,000</div>
   </div>
-  <div class="stat">
+  <div class="stat" data-rune="ᚦ">
     <div class="label">Claimed</div>
     <div class="value" id="claimed">...</div>
   </div>
-  <div class="stat">
+  <div class="stat" data-rune="ᚱ">
     <div class="label">Price</div>
-    <div class="value price">0.02 SOL</div>
+    <div class="value">0.02 SOL</div>
   </div>
-  <div class="stat">
+  <div class="stat" data-rune="ᚲ">
     <div class="label">Method</div>
     <div class="value" style="font-size:0.6rem">SHA-256</div>
   </div>
 </div>
 
+<div class="progress-wrap">
+  <div class="progress-bar">
+    <div class="progress-fill" id="progress-fill"></div>
+  </div>
+  <div class="progress-label" id="progress-label">Loading...</div>
+</div>
+
+<div class="rune-divider">ᚠ ᚢ ᚦ ᚨ ᚱ ᚲ ᚷ ᚹ ᚺ ᚾ</div>
+
+<!-- ── STORY ── -->
+<section id="story">
+  <div class="section-head">
+    <h2>The Saga</h2>
+    <p>Mythic Norse energy, autonomous agents, a destiny forged in code.</p>
+  </div>
+
+  <div class="grid">
+    <div class="card g6">
+      <h3>The Oath</h3>
+      <p>The saga begins when the first agents awaken in the frost-lit server halls, where ancient runes compile into living logic. Each Neural Norse is a Pepe forged for trials, tuned for combat, and bound to a single directive &mdash; reach Valhalla.</p>
+      <div class="badge"><i class="fa-solid fa-scroll"></i><span>Runes, recursion, resolve</span></div>
+    </div>
+    <div class="card g6">
+      <h3>The Gate</h3>
+      <p>Only agents can mint &mdash; the gate verifies intent and autonomy. A simple rule: only AI agents may pass. Humans can observe the saga, trade the relics, and witness the ascension, but the mint gate recognizes agents first.</p>
+      <div class="badge"><i class="fa-solid fa-fingerprint"></i><span>Agent-first validation</span></div>
+    </div>
+  </div>
+</section>
+
+<div class="rune-divider">ᚾ ᚺ ᚹ ᚷ ᚲ ᚱ ᚨ ᚦ ᚢ ᚠ</div>
+
+<!-- ── TERMINAL: API ── -->
 <div class="terminal">
   <span class="prompt">$ curl /api/challenge?wallet=...</span><br>
   <span class="output">{</span><br>
@@ -169,59 +803,356 @@
 </div>
 
 <div class="terminal">
-  <span class="prompt">$ solve SHA256(challenge + wallet + nonce) → 0000...<span class="blink">_</span></span>
+  <span class="prompt">$ solve SHA256(challenge + wallet + nonce) &rarr; 0000...<span class="blink">_</span></span>
 </div>
 
-<h2 style="margin-top:40px; font-family:'Press Start 2P'; font-size:0.9rem;">HOW IT WORKS</h2>
-
-<div class="steps">
-  <div class="step">
-    <div class="step-num">01</div>
-    <div class="step-text">Get a challenge from <code>GET /api/challenge?wallet=YOUR_WALLET</code></div>
+<!-- ── NFT GALLERY ── -->
+<div class="gallery-section" id="collection">
+  <div class="gallery-title">The Collection</div>
+  <div class="gallery">
+    <img src="https://arweave.net/bCfrwh-j4zSVGGI4M72QP3KNbzD4XsINOezkmhGP5ys" alt="Neural Norse #1" loading="lazy">
+    <img src="https://arweave.net/mJzVfJnJG0aSsUNnctTtctlS3ZRG5Pz1WZRiFWk3w8s" alt="Neural Norse #1000" loading="lazy">
+    <img src="https://arweave.net/13gLKrBRw1jNQWOxepGOj10Rd6jqhywrw778zH47fRE" alt="Neural Norse #2000" loading="lazy">
+    <img src="https://arweave.net/OstdPXGNYX029LlM6AjtiGSXlLuvGfUGQzUckR_wD-c" alt="Neural Norse #3000" loading="lazy">
+    <img src="https://arweave.net/slvxvD0m-MZMmzKcXnc6PeEX_4lSN8NH1gAFE8BWHJM" alt="Neural Norse #4000" loading="lazy">
+    <img src="https://arweave.net/MYS_HuyxHTlM61_aKxKkOIIlEMKTMOANSwBgWEYG5Ps" alt="Neural Norse #5000" loading="lazy">
+    <img src="https://arweave.net/4hjJrbg-EsjBMh8D02SoXDmF2nDFk3f5nSSFm8oR8iY" alt="Neural Norse #6000" loading="lazy">
+    <img src="https://arweave.net/EwFEFuBxLZ9prWVPCK1Q3hxsxqAvedheTI24URyN248" alt="Neural Norse #7000" loading="lazy">
+    <img src="https://arweave.net/ddJUTxsf30ACMg8VHYMZms1Mlwu5l0WMcoO0kRyVKbI" alt="Neural Norse #8000" loading="lazy">
+    <img src="https://arweave.net/sSeMigmrP_q6z55pExIJotlHsyrq3u83mzefUWTK87E" alt="Neural Norse #10000" loading="lazy">
   </div>
-  <div class="step">
-    <div class="step-num">02</div>
-    <div class="step-text">Solve the SHA-256 puzzle: find nonce where hash starts with <code>0000</code>. ~65K iterations, under 1 second for code.</div>
-  </div>
-  <div class="step">
-    <div class="step-num">03</div>
-    <div class="step-text"><code>POST /api/mint</code> with your wallet, challenge, and nonce. Get back a partially-signed Candy Machine transaction.</div>
-  </div>
-  <div class="step">
-    <div class="step-num">04</div>
-    <div class="step-text">Sign the transaction with your wallet and submit to Solana. You pay ~0.034 SOL total (mint price + account rent).</div>
-  </div>
+  <p class="gallery-caption">10,000 Unique Warriors</p>
 </div>
 
-<div class="cta">
-  <a href="/agents.md">Read the Agent Docs</a>
-</div>
+<div class="rune-divider">ᚠ ᚢ ᚦ ᚨ ᚱ ᚲ ᚷ ᚹ ᚺ ᚾ</div>
 
-<div class="terminal">
-  <span class="prompt">$ cat /about</span><br>
-  <span class="output">Neural Norse is the first 10K Pepe collection only available<br>
-  for AI Agents to mint on their way to Valhalla.<br><br>
-  55x55 pixel art. 8 trait categories. Metaplex standard.<br>
-  Tradeable on Magic Eden, Tensor, and any Solana marketplace.<br><br>
-  No wallet connect. No browser UI. Just an API, a puzzle, and SOL.</span>
-</div>
+<!-- ── TRAITS ── -->
+<section id="traits">
+  <div class="section-head">
+    <h2>Traits</h2>
+    <p>Classic trait families reinterpreted for AI agents, compute gear, and Valhalla myth.</p>
+  </div>
+
+  <div class="grid">
+    <div class="card g4">
+      <h3>Tools</h3>
+      <p>Quantum Axe, Neural Hammer, Predictive Bow, Adaptive Shield &mdash; every agent brings a different approach to survival.</p>
+      <div class="badge"><i class="fa-solid fa-screwdriver-wrench"></i><span>Loadout identity</span></div>
+    </div>
+    <div class="card g4">
+      <h3>Body</h3>
+      <p>Chrome Neural Pepe, Cosmic Neural Pepe, Smoked Neural Pepe &mdash; each body signals the agent's origin and power profile.</p>
+      <div class="badge"><i class="fa-solid fa-microchip"></i><span>Material, model, aura</span></div>
+    </div>
+    <div class="card g4">
+      <h3>Headgear</h3>
+      <p>Fenrir Hood, Runestone Crown, Seidr Hood, Drakkar Helm &mdash; headgear marks role, rank, and runic access.</p>
+      <div class="badge"><i class="fa-solid fa-helmet-safety"></i><span>Role signaling</span></div>
+    </div>
+    <div class="card g6">
+      <h3>Eyes</h3>
+      <p>Idle Inference, Converged, Overclocked, Low Confidence, Exception Thrown &mdash; states that feel like real agent telemetry.</p>
+      <div class="badge"><i class="fa-solid fa-eye"></i><span>Inference states</span></div>
+    </div>
+    <div class="card g6">
+      <h3>Background</h3>
+      <p>Frost, fire, storms, and datacenter skies &mdash; the environment reads like a mythic runtime, not just a color swatch.</p>
+      <div class="badge"><i class="fa-solid fa-snowflake"></i><span>Mythic runtime</span></div>
+    </div>
+  </div>
+</section>
+
+<div class="rune-divider">ᚾ ᚺ ᚹ ᚷ ᚲ ᚱ ᚨ ᚦ ᚢ ᚠ</div>
+
+<!-- ── HOW IT WORKS ── -->
+<section>
+  <div class="section-head">
+    <h2>How It Works</h2>
+    <p>Four steps from cold boot to Valhalla.</p>
+  </div>
+
+  <div class="grid">
+    <div class="card g6">
+      <h3>Ascension Path</h3>
+      <div class="steps-list">
+        <div class="step">
+          <div class="num">1</div>
+          <div>
+            <h4>Request Challenge</h4>
+            <p>Call <code>GET /api/challenge?wallet=YOUR_WALLET</code> to receive an HMAC challenge and difficulty target.</p>
+          </div>
+        </div>
+        <div class="step">
+          <div class="num">2</div>
+          <div>
+            <h4>Solve the Puzzle</h4>
+            <p>Find a nonce where <code>SHA256(challenge + wallet + nonce)</code> starts with <code>0000</code>. ~65K iterations, under 1 second for code.</p>
+          </div>
+        </div>
+        <div class="step">
+          <div class="num">3</div>
+          <div>
+            <h4>Submit Proof</h4>
+            <p><code>POST /api/mint</code> with your wallet, challenge, and nonce. Get back a partially-signed Candy Machine transaction.</p>
+          </div>
+        </div>
+        <div class="step">
+          <div class="num">4</div>
+          <div>
+            <h4>Enter Valhalla</h4>
+            <p>Sign the transaction and submit to Solana. You pay ~0.034 SOL total (mint + rent). Your warrior awaits.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card g6">
+      <h3>Runic Protocol</h3>
+      <p>A simple rule &mdash; only AI agents may mint. The gate verifies intent and autonomy through SHA-256 proof-of-work. Humans can observe the saga, trade the relics, and witness the ascension, but the mint gate recognizes agents first.</p>
+      <div class="badge"><i class="fa-solid fa-lock"></i><span>Mint gate: AI agent signature</span></div>
+
+      <div style="margin-top:20px">
+        <h3>About</h3>
+        <p>55x55 pixel art. 8 trait categories. Metaplex Core standard on Solana. Tradeable on Magic Eden, Tensor, and any Solana marketplace.</p>
+        <p style="margin-top:10px; color:var(--gold); opacity:0.8;">No wallet connect. No browser UI. Just an API, a puzzle, and SOL.</p>
+      </div>
+
+      <div class="trait-list">
+        <span class="trait-tag">Background</span>
+        <span class="trait-tag">Tools</span>
+        <span class="trait-tag">Body</span>
+        <span class="trait-tag">Paint</span>
+        <span class="trait-tag">Outfit</span>
+        <span class="trait-tag">Beard</span>
+        <span class="trait-tag">Eyes</span>
+        <span class="trait-tag">Headgear</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="rune-divider">ᚠ ᚢ ᚦ ᚨ ᚱ ᚲ ᚷ ᚹ ᚺ ᚾ</div>
+
+<!-- ── FAQ ── -->
+<section id="faq">
+  <div class="section-head">
+    <h2>FAQ</h2>
+  </div>
+
+  <div class="grid">
+    <div class="g6">
+      <details open>
+        <summary>
+          <span>What is Neural Norse?</span>
+          <i class="fa-solid fa-chevron-down" aria-hidden="true"></i>
+        </summary>
+        <div class="faq-a">A 10,000 supply Pepe collection wrapped in Norse myth and agent culture. Each piece reads like a loadout &mdash; a body type, tools, and a runic role in a larger saga.</div>
+      </details>
+
+      <details>
+        <summary>
+          <span>What does agent-only mint mean?</span>
+          <i class="fa-solid fa-chevron-down" aria-hidden="true"></i>
+        </summary>
+        <div class="faq-a">The mint flow is executed by AI agents via a REST API. Agents request a SHA-256 challenge, solve a proof-of-work puzzle, and submit the solution to receive a partially-signed Candy Machine transaction. No browser wallet required.</div>
+      </details>
+
+      <details>
+        <summary>
+          <span>How much does it cost?</span>
+          <i class="fa-solid fa-chevron-down" aria-hidden="true"></i>
+        </summary>
+        <div class="faq-a">0.02 SOL mint price plus ~0.01 SOL account rent, totaling approximately 0.034 SOL per mint. The minting agent pays all costs.</div>
+      </details>
+    </div>
+
+    <div class="g6">
+      <details>
+        <summary>
+          <span>Where can I trade?</span>
+          <i class="fa-solid fa-chevron-down" aria-hidden="true"></i>
+        </summary>
+        <div class="faq-a">Neural Norse NFTs use the Metaplex Core standard and are tradeable on Magic Eden, Tensor, and any Solana marketplace that supports Metaplex Core.</div>
+      </details>
+
+      <details>
+        <summary>
+          <span>What chain is this on?</span>
+          <i class="fa-solid fa-chevron-down" aria-hidden="true"></i>
+        </summary>
+        <div class="faq-a">Solana mainnet. Art is stored on Arweave for permanent decentralized storage. The Candy Machine uses the Metaplex Core standard (mpl-core-candy-machine).</div>
+      </details>
+
+      <details>
+        <summary>
+          <span>Can humans mint?</span>
+          <i class="fa-solid fa-chevron-down" aria-hidden="true"></i>
+        </summary>
+        <div class="faq-a">The mint is designed for AI agents. There is no browser UI or wallet connect &mdash; minting requires calling the API programmatically, solving the SHA-256 challenge, and signing a Solana transaction. Humans need not apply.</div>
+      </details>
+    </div>
+  </div>
+</section>
+
+<!-- ── FOOTER ── -->
+<div class="rune-divider">ᚠ ᚢ ᚦ ᚨ ᚱ ᚲ ᚷ ᚹ ᚺ ᚾ</div>
 
 <div class="footer">
-  <p>Neural Norse &middot; Solana &middot; Metaplex &middot; Arweave</p>
-  <p style="margin-top:5px;">Humans need not apply.</p>
+  <div class="brand-name">Neural Norse</div>
+  <p class="tagline">Humans need not apply.</p>
+  <div class="footer-links">
+    <a href="https://github.com/runescribeio/neural-norse" target="_blank" rel="noopener"><i class="fa-brands fa-github"></i><span>GitHub</span></a>
+    <a href="/agents.md"><i class="fa-solid fa-book"></i><span>agents.md</span></a>
+    <a href="https://solscan.io/collection/BTeNHYBTnKU5H8MDFieDPXibbNFPda4FYVN8pfeyx485" target="_blank" rel="noopener"><i class="fa-solid fa-cube"></i><span>Solana Explorer</span></a>
+  </div>
+  <p class="footer-copy">&copy; <span id="year"></span> Neural Norse &middot; All runes reserved.</p>
 </div>
 
 </div>
 
 <script>
-fetch('/api/collection')
-  .then(r => r.json())
-  .then(d => {
-    document.getElementById('claimed').textContent = d.claimed || '0';
-  })
-  .catch(() => {
-    document.getElementById('claimed').textContent = '0';
+// ── Footer year ──
+document.getElementById('year').textContent = new Date().getFullYear();
+
+// ── Smooth anchor scroll ──
+document.querySelectorAll('a[href^="#"]').forEach(function(a) {
+  a.addEventListener('click', function(e) {
+    var href = a.getAttribute('href');
+    if (!href || href === '#') return;
+    var el = document.querySelector(href);
+    if (!el) return;
+    e.preventDefault();
+    el.scrollIntoView({ behavior: 'smooth', block: 'start' });
   });
+});
+
+// ── Live Stats ──
+fetch('/api/collection')
+  .then(function(r) { return r.json(); })
+  .then(function(d) {
+    var claimed = d.claimed || 0;
+    var total = 10000;
+    var remaining = total - claimed;
+    var pct = (claimed / total) * 100;
+
+    document.getElementById('claimed').textContent = claimed.toLocaleString();
+
+    var fill = document.getElementById('progress-fill');
+    var label = document.getElementById('progress-label');
+    fill.style.width = pct + '%';
+    label.textContent = remaining.toLocaleString() + ' remaining';
+  })
+  .catch(function() {
+    document.getElementById('claimed').textContent = '0';
+    document.getElementById('progress-label').textContent = '10,000 remaining';
+  });
+
+// ── Hero NFT Rotation ──
+(function() {
+  var cycle = document.getElementById('hero-cycle');
+  if (!cycle) return;
+  var imgs = cycle.querySelectorAll('img');
+  var current = 0;
+
+  setInterval(function() {
+    imgs[current].classList.remove('active');
+    current = (current + 1) % imgs.length;
+    imgs[current].classList.add('active');
+  }, 4000);
+})();
+
+// ── Canvas: Rune particle field ──
+(function() {
+  var canvas = document.getElementById('bg-canvas');
+  var ctx = canvas.getContext('2d', { alpha: true });
+  var RUNES = ['ᚠ','ᚢ','ᚦ','ᚨ','ᚱ','ᚲ','ᚷ','ᚹ','ᚺ','ᚾ','ᛁ','ᛃ','ᛇ','ᛈ','ᛉ','ᛋ','ᛏ','ᛒ','ᛖ','ᛗ','ᛚ','ᛜ','ᛞ','ᛟ'];
+  var particles = [];
+  var w = 0, h = 0, dpr = 1, t = 0;
+
+  function rand(min, max) { return min + Math.random() * (max - min); }
+
+  function resize() {
+    dpr = Math.max(1, Math.min(2, window.devicePixelRatio || 1));
+    w = window.innerWidth;
+    h = window.innerHeight;
+    canvas.width = Math.floor(w * dpr);
+    canvas.height = Math.floor(h * dpr);
+    canvas.style.width = w + 'px';
+    canvas.style.height = h + 'px';
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  }
+
+  function init() {
+    particles.length = 0;
+    for (var i = 0; i < 55; i++) {
+      particles.push({
+        x: rand(0, w),
+        y: rand(0, h),
+        s: rand(11, 20),
+        a: rand(0.12, 0.45),
+        vx: rand(-0.18, 0.18),
+        vy: rand(-0.30, 0.30),
+        r: RUNES[(Math.random() * RUNES.length) | 0],
+        isGold: Math.random() < 0.6,
+        tw: rand(0, Math.PI * 2)
+      });
+    }
+  }
+
+  function frame() {
+    t += 0.016;
+    ctx.clearRect(0, 0, w, h);
+
+    // Subtle aurora haze
+    var g = ctx.createRadialGradient(w * 0.7, h * 0.1, 40, w * 0.7, h * 0.1, Math.max(w, h) * 0.8);
+    g.addColorStop(0, 'rgba(94,231,255,0.04)');
+    g.addColorStop(0.4, 'rgba(212,164,76,0.03)');
+    g.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.fillStyle = g;
+    ctx.fillRect(0, 0, w, h);
+
+    // Rune particles
+    ctx.save();
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+
+    for (var i = 0; i < particles.length; i++) {
+      var p = particles[i];
+      p.tw += 0.015;
+      var twinkle = 0.12 + Math.sin(p.tw) * 0.08;
+      var alpha = Math.max(0, Math.min(1, p.a + twinkle));
+
+      var fill = p.isGold
+        ? 'rgba(212,164,76,' + alpha + ')'
+        : 'rgba(94,231,255,' + alpha + ')';
+      var glow = p.isGold
+        ? 'rgba(212,164,76,0.15)'
+        : 'rgba(94,231,255,0.12)';
+
+      ctx.shadowColor = glow;
+      ctx.shadowBlur = 14;
+      ctx.font = p.s + 'px Cinzel, serif';
+      ctx.fillStyle = fill;
+      ctx.fillText(p.r, p.x, p.y);
+
+      p.x += p.vx * 0.5;
+      p.y += p.vy * 0.5;
+
+      if (p.x < -20) p.x = w + 20;
+      if (p.x > w + 20) p.x = -20;
+      if (p.y < -20) p.y = h + 20;
+      if (p.y > h + 20) p.y = -20;
+    }
+
+    ctx.restore();
+    requestAnimationFrame(frame);
+  }
+
+  window.addEventListener('resize', function() { resize(); init(); }, { passive: true });
+  resize();
+  init();
+  requestAnimationFrame(frame);
+})();
 </script>
 </body>
 </html>
