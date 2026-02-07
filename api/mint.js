@@ -4,6 +4,7 @@ const { createUmi } = require("@metaplex-foundation/umi-bundle-defaults");
 const { mplCandyMachine, mintV2, fetchCandyMachine } = require("@metaplex-foundation/mpl-candy-machine");
 const { mplTokenMetadata } = require("@metaplex-foundation/mpl-token-metadata");
 const { keypairIdentity, generateSigner, some, publicKey, transactionBuilder } = require("@metaplex-foundation/umi");
+const { TokenStandard } = require("@metaplex-foundation/mpl-token-metadata");
 const { fromWeb3JsKeypair, fromWeb3JsPublicKey, toWeb3JsTransaction } = require("@metaplex-foundation/umi-web3js-adapters");
 const { setComputeUnitLimit } = require("@metaplex-foundation/mpl-toolbox");
 const { Redis } = require("@upstash/redis");
@@ -113,6 +114,7 @@ module.exports = async (req, res) => {
       nftMint,
       collectionMint: collectionMintId,
       collectionUpdateAuthority: umi.identity.publicKey,
+      tokenStandard: TokenStandard.NonFungible,
       mintArgs: {
         solPayment: some({ destination: treasuryId }),
         mintLimit: some({ id: 1 }),
