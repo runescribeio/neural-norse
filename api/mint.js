@@ -115,7 +115,7 @@ module.exports = async (req, res) => {
       nftMint,
       collectionMint: collectionMintId,
       collectionUpdateAuthority: umi.identity.publicKey,
-      tokenStandard: TokenStandard.NonFungible,
+      tokenStandard: candyMachine.tokenStandard,
       mintArgs: {
         solPayment: some({ destination: treasuryId }),
         mintLimit: some({ id: 1 }),

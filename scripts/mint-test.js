@@ -44,7 +44,7 @@ function loadKeypair() {
     process.exit(1);
   }
   try {
-    return Keypair.fromSecretKey(bs58.decode(secret));
+    return Keypair.fromSecretKey((bs58.default || bs58).decode(secret));
   } catch {
     console.error("❌ Invalid SOLANA_PRIVATE_KEY — must be base58-encoded secret key");
     process.exit(1);
@@ -135,26 +135,31 @@ async function main() {
   let signature;
   const connection = new Connection(SOLANA_RPC, "confirmed");
 
-  // Try VersionedTransaction first, fall back to legacy Transaction
+  // Deserialize as VersionedTransaction
+  const vtx = VersionedTransaction.deserialize(new Uint8Array(txBuffer));
+  vtx.sign([keypair]);
+  
   try {
-    const vtx = VersionedTransaction.deserialize(txBuffer);
-    vtx.sign([keypair]);
-    signature = await connection.sendRawTransaction(vtx.serialize(), {
-      skipPreflight: false,
-      maxRetries: 3,
-    });
-  } catch (e) {
-    // Fallback: legacy Transaction
-    if (e.message && e.message.includes("Signature")) {
-      // Likely a legacy transaction
+    // Simulate first to get detailed errors
+    const simResult = await connection.simulateTransaction(vtx, { sigVerify: false });
+    if (simResult.value.err) {
+      console.error("  Simulation error:", JSON.stringify(simResult.value.err));
+      console.error("  Logs:");
+      for (const log of simResult.value.logs || []) {
+        console.error("    ", log);
+      }
+      throw new Error("Simulation failed: " + JSON.stringify(simResult.value.err));
     }
-    const tx = Transaction.from(txBuffer);
-    tx.partialSign(keypair);
-    signature = await connection.sendRawTransaction(tx.serialize(), {
-      skipPreflight: false,
-      maxRetries: 3,
-    });
+    console.log("  Simulation OK, submitting...");
+  } catch (simErr) {
+    if (simErr.message.includes("Simulation failed")) throw simErr;
+    console.log("  Simulation check skipped:", simErr.message.slice(0, 60));
   }
+
+  signature = await connection.sendRawTransaction(vtx.serialize(), {
+    skipPreflight: true,
+    maxRetries: 3,
+  });
 
   console.log(`  signature = ${signature}`);
   console.log("  Confirming...");
