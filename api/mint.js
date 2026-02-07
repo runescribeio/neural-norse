@@ -111,6 +111,7 @@ module.exports = async (req, res) => {
     // The thirdPartySigner guard requires our server key as a signer
     const mintBuilder = mintV2(umi, {
       candyMachine: candyMachineId,
+      candyGuard: candyMachine.mintAuthority,
       nftMint,
       collectionMint: collectionMintId,
       collectionUpdateAuthority: umi.identity.publicKey,

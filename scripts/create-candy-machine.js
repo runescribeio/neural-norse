@@ -130,24 +130,34 @@ async function main() {
     }));
 
     let success = false;
-    for (let attempt = 0; attempt < 3; attempt++) {
+    for (let attempt = 0; attempt < 5; attempt++) {
       try {
         // addConfigLines is sync, returns TransactionBuilder directly
-        await addConfigLines(umi, {
+        const txPromise = addConfigLines(umi, {
           candyMachine: publicKey(cmAddress),
           index: i,
           configLines,
-        }).sendAndConfirm(umi, { confirm: { commitment: "confirmed" } });
+        }).sendAndConfirm(umi);
 
+        // Timeout after 30s to avoid hanging forever
+        const timeout = new Promise((_, reject) => 
+          setTimeout(() => reject(new Error("TX timeout after 30s")), 30000));
+        
+        await Promise.race([txPromise, timeout]);
         success = true;
         break;
       } catch (err) {
-        console.error(`  Error at index ${i} (attempt ${attempt + 1}/3):`, err.message);
-        if (attempt < 2) {
-          await new Promise(r => setTimeout(r, 2000 * (attempt + 1)));
+        const msg = err.message || String(err);
+        console.error(`  Error at index ${i} (attempt ${attempt + 1}/5):`, msg.slice(0, 120));
+        if (attempt < 4) {
+          const delay = 2000 * Math.pow(2, attempt); // 2s, 4s, 8s, 16s
+          await new Promise(r => setTimeout(r, delay));
         }
       }
     }
+
+    // Delay between batches to avoid 429s
+    await new Promise(r => setTimeout(r, 1200));
 
     if (!success) {
       fs.writeFileSync(progressPath, JSON.stringify(progress, null, 2));
@@ -160,8 +170,6 @@ async function main() {
     // Log every batch, save every 50 batches
     if (progress.itemsInserted % 80 === 0 || progress.itemsInserted >= publicItems.length) {
       console.log(`  ${progress.itemsInserted}/${publicItems.length}`);
-    }
-    if (progress.itemsInserted % 400 === 0 || progress.itemsInserted >= publicItems.length) {
       fs.writeFileSync(progressPath, JSON.stringify(progress, null, 2));
     }
   }
