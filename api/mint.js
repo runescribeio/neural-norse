@@ -110,12 +110,14 @@ module.exports = async (req, res) => {
     const asset = generateSigner(umi);
 
     // Build the mint instruction using Core Candy Machine mintV1
+    // payer must be the minter so they pay all costs (mint price + rent + fees)
     const mintBuilder = mintV1(umi, {
       candyMachine: candyMachineId,
       candyGuard: candyMachine.mintAuthority,
       asset,
       collection: collectionId,
       minter: minterSigner,
+      payer: minterSigner,
       mintArgs: {
         solPayment: some({ destination: treasuryId }),
         mintLimit: some({ id: 1 }),
