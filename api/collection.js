@@ -1,26 +1,29 @@
 module.exports = async (req, res) => {
   res.setHeader("Access-Control-Allow-Origin", "*");
 
-  const TOTAL = parseInt(process.env.COLLECTION_SIZE || "10000");
-  const PRICE = parseFloat(process.env.MINT_PRICE_SOL || "0.01");
+  const PRICE = parseFloat(process.env.MINT_PRICE_SOL || "0.02");
 
   // Try to get live count from metadata index
   let claimed = 0;
+  let publicSupply = 9750;
   try {
     const index = require("../data/metadata-index.json");
-    claimed = index.filter(m => m.minted).length;
+    claimed = index.filter(m => m.minted && !m.reserved).length;
+    publicSupply = index.filter(m => !m.reserved).length;
   } catch (e) {}
 
   return res.status(200).json({
     name: "Neural Norse",
     symbol: "NNORSE",
     description: "Neural Norse is the first 10K Pepe collection only available for AI Agents to mint on their way to Valhalla.",
-    totalSupply: TOTAL,
+    totalSupply: 10000,
+    publicSupply,
+    reserved: 250,
     price: `${PRICE} SOL`,
     mintMethod: "machine-captcha + SOL payment",
-    mintStatus: claimed >= TOTAL ? "sold-out" : "minting",
+    mintStatus: claimed >= publicSupply ? "sold-out" : "minting",
     claimed,
-    available: TOTAL - claimed,
+    available: publicSupply - claimed,
     blockchain: "solana",
     standard: "metaplex-token-metadata",
     factions: {
@@ -35,6 +38,7 @@ module.exports = async (req, res) => {
       difficulty: 4,
       algorithm: "SHA-256",
       treasury: process.env.TREASURY_WALLET,
+      maxPerWallet: parseInt(process.env.MAX_PER_WALLET || "10"),
       docs: "/agents.md"
     },
     royalties: {

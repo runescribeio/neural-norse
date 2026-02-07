@@ -8,6 +8,7 @@ const bs58 = require("bs58");
 
 const DIFFICULTY = 4;
 const CHALLENGE_TTL = 300_000; // 5 min in ms
+const MAX_PER_WALLET = parseInt(process.env.MAX_PER_WALLET || "10");
 const RPC = process.env.SOLANA_RPC || "https://api.mainnet-beta.solana.com";
 
 // Load metadata index (cached across warm invocations)
@@ -150,21 +151,30 @@ module.exports = async (req, res) => {
       return res.status(400).json({ success: false, error: "Invalid proof of work" });
     }
 
-    // 3. Verify payment
-    const mintPrice = parseFloat(process.env.MINT_PRICE_SOL || "0.01");
+    // 3. Check per-wallet limit
+    const index = getMetadataIndex();
+    const walletMints = index.filter(m => m.mintedTo === wallet).length;
+    if (walletMints >= MAX_PER_WALLET) {
+      return res.status(429).json({
+        success: false,
+        error: `Wallet has already minted ${walletMints}/${MAX_PER_WALLET}. Max per wallet reached.`
+      });
+    }
+
+    // 4. Verify payment
+    const mintPrice = parseFloat(process.env.MINT_PRICE_SOL || "0.02");
     const paymentResult = await verifyPayment(txSignature, mintPrice, process.env.TREASURY_WALLET);
     if (!paymentResult.valid) {
       return res.status(400).json({ success: false, error: paymentResult.error });
     }
 
-    // 4. Pick next available NFT
-    const index = getMetadataIndex();
-    const available = index.find(m => !m.minted);
+    // 5. Pick next available NFT (skip reserved)
+    const available = index.find(m => !m.minted && !m.reserved);
     if (!available) {
       return res.status(410).json({ success: false, error: "Sold out!" });
     }
 
-    // 5. Mint NFT
+    // 6. Mint NFT
     const mintResult = await mintNft(wallet, available.index, available.metadataUri, available.name);
 
     // Mark as minted (note: in serverless, this won't persist across cold starts
