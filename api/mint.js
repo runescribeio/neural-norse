@@ -4,12 +4,20 @@ const { createUmi } = require("@metaplex-foundation/umi-bundle-defaults");
 const { createNft, mplTokenMetadata } = require("@metaplex-foundation/mpl-token-metadata");
 const { keypairIdentity, generateSigner, percentAmount } = require("@metaplex-foundation/umi");
 const { fromWeb3JsKeypair, fromWeb3JsPublicKey } = require("@metaplex-foundation/umi-web3js-adapters");
+const { Redis } = require("@upstash/redis");
 const bs58 = require("bs58");
 
 const DIFFICULTY = 4;
 const CHALLENGE_TTL = 300_000; // 5 min in ms
 const MAX_PER_WALLET = parseInt(process.env.MAX_PER_WALLET || "10");
+const TOTAL_PUBLIC = 9750;
 const RPC = process.env.SOLANA_RPC || "https://api.mainnet-beta.solana.com";
+
+// Upstash Redis client (uses KV_REST_API_URL + KV_REST_API_TOKEN env vars)
+const redis = new Redis({
+  url: process.env.KV_REST_API_URL,
+  token: process.env.KV_REST_API_TOKEN,
+});
 
 // Load metadata index (cached across warm invocations)
 let metadataIndex = null;
@@ -24,7 +32,6 @@ function verifyChallenge(challenge, wallet) {
   const [hmac, payloadB64] = challenge.split(".");
   if (!hmac || !payloadB64) return { valid: false, error: "Malformed challenge" };
 
-  // Verify HMAC
   const expectedHmac = crypto
     .createHmac("sha256", process.env.CHALLENGE_SECRET || "neural-norse-default-secret")
     .update(payloadB64)
@@ -32,7 +39,6 @@ function verifyChallenge(challenge, wallet) {
 
   if (hmac !== expectedHmac) return { valid: false, error: "Invalid challenge signature" };
 
-  // Decode and check payload
   const payload = JSON.parse(Buffer.from(payloadB64, "base64url").toString());
   if (payload.wallet !== wallet) return { valid: false, error: "Wallet mismatch" };
   if (Date.now() - payload.timestamp > CHALLENGE_TTL) return { valid: false, error: "Challenge expired" };
@@ -55,7 +61,6 @@ async function verifyPayment(txSignature, expectedAmount, treasuryWallet) {
     if (!tx) return { valid: false, error: "Transaction not found or not confirmed" };
     if (tx.meta.err) return { valid: false, error: "Transaction failed on-chain" };
 
-    // Check for a transfer to treasury
     const treasuryPubkey = new PublicKey(treasuryWallet);
     const preBalances = tx.meta.preBalances;
     const postBalances = tx.meta.postBalances;
@@ -84,7 +89,7 @@ async function verifyPayment(txSignature, expectedAmount, treasuryWallet) {
 }
 
 async function mintNft(wallet, tokenIndex, metadataUri, name) {
-  const secretKey = bs58.decode(process.env.MINT_AUTHORITY_KEY);
+  const secretKey = (bs58.default || bs58).decode(process.env.MINT_AUTHORITY_KEY);
   const mintAuthority = Keypair.fromSecretKey(secretKey);
 
   const umi = createUmi(RPC).use(mplTokenMetadata());
@@ -112,15 +117,6 @@ async function mintNft(wallet, tokenIndex, metadataUri, name) {
     mint: mint.publicKey,
     signature: Buffer.from(result.signature).toString("base64"),
   };
-}
-
-async function getMintCount() {
-  // Query how many NFTs exist in collection via on-chain data
-  // For simplicity, use a counter file approach or environment variable
-  // In production, query Metaplex indexed data
-  const connection = new Connection(RPC, "confirmed");
-  // We'll track via a simple approach: read from metadata-index which ones are marked minted
-  return getMetadataIndex().filter(m => m.minted).length;
 }
 
 module.exports = async (req, res) => {
@@ -151,9 +147,8 @@ module.exports = async (req, res) => {
       return res.status(400).json({ success: false, error: "Invalid proof of work" });
     }
 
-    // 3. Check per-wallet limit
-    const index = getMetadataIndex();
-    const walletMints = index.filter(m => m.mintedTo === wallet).length;
+    // 3. Check per-wallet limit (from Redis)
+    const walletMints = await redis.get(`wallet:${wallet}:count`) || 0;
     if (walletMints >= MAX_PER_WALLET) {
       return res.status(429).json({
         success: false,
@@ -161,42 +156,61 @@ module.exports = async (req, res) => {
       });
     }
 
-    // 4. Verify payment
+    // 4. Check for duplicate tx signature (prevent replay)
+    const txUsed = await redis.get(`tx:${txSignature}`);
+    if (txUsed) {
+      return res.status(400).json({ success: false, error: "Transaction signature already used" });
+    }
+
+    // 5. Verify payment
     const mintPrice = parseFloat(process.env.MINT_PRICE_SOL || "0.02");
     const paymentResult = await verifyPayment(txSignature, mintPrice, process.env.TREASURY_WALLET);
     if (!paymentResult.valid) {
       return res.status(400).json({ success: false, error: paymentResult.error });
     }
 
-    // 5. Pick next available NFT (skip reserved)
-    const available = index.find(m => !m.minted && !m.reserved);
-    if (!available) {
+    // 6. Atomically claim the next NFT index
+    const nextIndex = await redis.incr("mint:counter");
+    if (nextIndex > TOTAL_PUBLIC) {
+      await redis.decr("mint:counter"); // Roll back
       return res.status(410).json({ success: false, error: "Sold out!" });
     }
 
-    // 6. Mint NFT
-    const mintResult = await mintNft(wallet, available.index, available.metadataUri, available.name);
+    // Map counter to metadata index (0-based, skip reserved)
+    const nftIndex = nextIndex - 1;
+    const index = getMetadataIndex();
+    const nft = index[nftIndex];
 
-    // Mark as minted (note: in serverless, this won't persist across cold starts
-    // -- we'll need to verify on-chain for real state. This is a best-effort cache.)
-    available.minted = true;
-    available.mintedTo = wallet;
+    if (!nft || nft.reserved) {
+      return res.status(500).json({ success: false, error: "NFT assignment error" });
+    }
 
-    const claimed = index.filter(m => m.minted).length;
+    // 7. Mint NFT on-chain
+    const mintResult = await mintNft(wallet, nft.index, nft.metadataUri, nft.name);
+
+    // 8. Record in Redis (all atomic-ish)
+    await Promise.all([
+      redis.set(`tx:${txSignature}`, wallet),           // Mark tx as used
+      redis.incr(`wallet:${wallet}:count`),              // Increment wallet count
+      redis.set(`nft:${nftIndex}:mint`, mintResult.mint), // Record mint address
+      redis.set(`nft:${nftIndex}:owner`, wallet),         // Record owner
+    ]);
+
+    const claimed = nextIndex;
 
     return res.status(200).json({
       success: true,
       message: "Welcome to Valhalla, agent.",
       nft: {
-        id: available.index,
-        name: available.name,
+        id: nft.index,
+        name: nft.name,
         mint: mintResult.mint,
         explorer: `https://solscan.io/token/${mintResult.mint}`
       },
       collection: {
         claimed,
-        remaining: index.length - claimed,
-        total: index.length
+        remaining: TOTAL_PUBLIC - claimed,
+        total: TOTAL_PUBLIC
       }
     });
   } catch (e) {
