@@ -3,7 +3,7 @@ const { Connection, PublicKey, Keypair } = require("@solana/web3.js");
 const { createUmi } = require("@metaplex-foundation/umi-bundle-defaults");
 const { mplCandyMachine, mintV1, fetchCandyMachine } = require("@metaplex-foundation/mpl-core-candy-machine");
 const { mplCore } = require("@metaplex-foundation/mpl-core");
-const { keypairIdentity, generateSigner, some, publicKey, transactionBuilder } = require("@metaplex-foundation/umi");
+const { keypairIdentity, generateSigner, some, publicKey, transactionBuilder, createNoopSigner } = require("@metaplex-foundation/umi");
 const { fromWeb3JsKeypair, fromWeb3JsPublicKey } = require("@metaplex-foundation/umi-web3js-adapters");
 const { setComputeUnitLimit } = require("@metaplex-foundation/mpl-toolbox");
 const { Redis } = require("@upstash/redis");
@@ -94,6 +94,9 @@ module.exports = async (req, res) => {
     const collectionId = publicKey(process.env.COLLECTION_MINT);
     const treasuryId = publicKey(process.env.TREASURY_WALLET);
     const minterPublicKey = fromWeb3JsPublicKey(new PublicKey(wallet));
+    // Create a noopSigner so UMI marks the minter as a required signer
+    // in the transaction. The actual signature comes from the client.
+    const minterSigner = createNoopSigner(minterPublicKey);
 
     // Fetch candy machine to get current state
     const candyMachine = await fetchCandyMachine(umi, candyMachineId);
@@ -112,7 +115,7 @@ module.exports = async (req, res) => {
       candyGuard: candyMachine.mintAuthority,
       asset,
       collection: collectionId,
-      minter: { publicKey: minterPublicKey },
+      minter: minterSigner,
       mintArgs: {
         solPayment: some({ destination: treasuryId }),
         mintLimit: some({ id: 1 }),
@@ -127,7 +130,7 @@ module.exports = async (req, res) => {
 
     // Build the transaction, setting the minter as the fee payer
     const tx = await builder.buildWithLatestBlockhash(umi, {
-      payer: { publicKey: minterPublicKey },
+      payer: minterSigner,
     });
 
     // Sign with our authority key (third-party signer) and the asset signer
